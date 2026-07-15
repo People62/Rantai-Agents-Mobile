@@ -5,7 +5,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar, Button, Card, Screen } from '@/components/ui';
-import { Radius, Spacing } from '@/constants/theme';
+import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
 
@@ -51,7 +51,7 @@ export function MoreScreen() {
                 <Text style={[styles.itemLabel, { color: theme.text }]}>{it.label}</Text>
                 <Text style={[styles.itemDesc, { color: theme.textSecondary }]}>{it.desc}</Text>
               </View>
-              <Text style={{ color: theme.textSecondary, fontSize: 18 }}>›</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: FontSize.xl }}>›</Text>
             </Pressable>
           ))}
         </View>
@@ -64,11 +64,11 @@ export function MoreScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: Spacing.four, gap: Spacing.three },
-  title: { fontSize: 28, fontWeight: '700' },
+  title: { fontSize: FontSize.title1, fontWeight: FontWeight.bold },
   profile: {},
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  name: { fontSize: 16, fontWeight: '600' },
-  email: { fontSize: 13 },
+  name: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
+  email: { fontSize: FontSize.sm },
   menu: { gap: Spacing.two },
   item: {
     flexDirection: 'row',
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
-  itemLabel: { fontSize: 15, fontWeight: '600' },
-  itemDesc: { fontSize: 13 },
+  itemLabel: { fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  itemDesc: { fontSize: FontSize.sm },
   signOut: { marginTop: Spacing.two },
 });

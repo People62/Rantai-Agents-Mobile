@@ -34,8 +34,22 @@ export function ChatThreadScreen({ route }: Props) {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator color={theme.accent} />
+          </View>
+        ) : error ? (
+          <View style={styles.centered}>
+            <Text style={{ color: theme.destructive, fontSize: FontSize.base }}>{error}</Text>
+          </View>
+        ) : (
         <ScrollView contentContainerStyle={styles.messages}>
-          {DEMO.map((m) => {
+            {messages.length === 0 ? (
+              <Text style={[styles.empty, { color: theme.textSecondary }]}>
+                Belum ada pesan pada percakapan ini.
+              </Text>
+            ) : (
+              messages.map((m) => {
             const mine = m.role === 'user';
             return (
               <View
@@ -47,16 +61,26 @@ export function ChatThreadScreen({ route }: Props) {
                     backgroundColor: mine ? theme.accent : theme.backgroundElement,
                   },
                 ]}>
-                <Text style={{ color: mine ? theme.accentForeground : theme.text, fontSize: 15 }}>
-                  {m.text}
+                    <Text
+                      style={{
+                        color: mine ? theme.accentForeground : theme.text,
+                        fontSize: FontSize.md,
+                      }}>
+                      {m.content}
                 </Text>
               </View>
             );
-          })}
+              })
+            )}
         </ScrollView>
+        )}
         <View style={[styles.inputBar, { borderTopColor: theme.border }]}>
           <View style={styles.flex}>
-            <Input value={text} onChangeText={setText} placeholder={`Pesan ke ${route.params.title}…`} />
+            <Input
+              value={text}
+              onChangeText={setText}
+              placeholder={`Pesan ke ${route.params.title}…`}
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -66,6 +90,8 @@ export function ChatThreadScreen({ route }: Props) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  empty: { textAlign: 'center', marginTop: Spacing.six, fontSize: FontSize.base },
   messages: { padding: Spacing.four, gap: Spacing.two },
   bubble: {
     maxWidth: '82%',

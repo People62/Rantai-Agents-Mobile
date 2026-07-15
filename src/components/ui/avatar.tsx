@@ -3,7 +3,7 @@
  */
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Radius } from '@/constants/theme';
+import { FontWeight, Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 function initials(name: string) {
@@ -37,5 +37,5 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center' },
-  text: { fontWeight: '600' },
+  text: { fontWeight: FontWeight.semibold },
 });

@@ -4,7 +4,7 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar, Card, Screen } from '@/components/ui';
-import { Radius, Spacing } from '@/constants/theme';
+import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { agents } from '@/data/mock';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -12,10 +12,7 @@ export function AgentsScreen() {
   const theme = useTheme();
 
   return (
-    <Screen padded={false} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Agents</Text>
-      </View>
+    <Screen padded={false} edges={['bottom']}>
       <FlatList
         data={agents}
         keyExtractor={(a) => a.id}
@@ -49,14 +46,12 @@ export function AgentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.three },
-  title: { fontSize: 28, fontWeight: '700' },
-  list: { paddingHorizontal: Spacing.four },
+  list: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   info: { flex: 1, gap: 2 },
-  name: { fontSize: 16, fontWeight: '600' },
-  role: { fontSize: 13 },
+  name: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
+  role: { fontSize: FontSize.sm },
   statusWrap: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   dot: { width: 8, height: 8, borderRadius: Radius.full },
-  status: { fontSize: 12 },
+  status: { fontSize: FontSize.xs },
 });

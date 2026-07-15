@@ -3,7 +3,7 @@
  */
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Radius, Spacing } from '@/constants/theme';
+import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type Variant = 'default' | 'secondary' | 'accent' | 'outline';
@@ -46,5 +46,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: 2,
   },
-  text: { fontSize: 12, fontWeight: '600' },
+  text: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold },
 });

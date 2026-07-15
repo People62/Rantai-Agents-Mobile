@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Badge, Button, Card, Screen } from '@/components/ui';
-import { Radius, Spacing } from '@/constants/theme';
+import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { marketItems } from '@/data/mock';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -18,11 +18,7 @@ export function MarketplaceScreen() {
   const data = tab === 'Semua' ? marketItems : marketItems.filter((m) => m.category === tab);
 
   return (
-    <Screen padded={false} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Marketplace</Text>
-      </View>
-
+    <Screen padded={false} edges={['bottom']}>
       <View style={styles.tabs}>
         {TABS.map((t) => {
           const active = t === tab;
@@ -36,7 +32,7 @@ export function MarketplaceScreen() {
                   backgroundColor: active ? theme.primary : theme.backgroundElement,
                 },
               ]}>
-              <Text style={{ color: active ? theme.primaryForeground : theme.textSecondary, fontWeight: '600', fontSize: 13 }}>
+              <Text style={{ color: active ? theme.primaryForeground : theme.textSecondary, fontWeight: FontWeight.semibold, fontSize: FontSize.sm }}>
                 {t}
               </Text>
             </Pressable>
@@ -68,14 +64,12 @@ export function MarketplaceScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
-  title: { fontSize: 28, fontWeight: '700' },
-  tabs: { flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.three },
+  tabs: { flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.three },
   tab: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderRadius: Radius.full },
   list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.four },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.two },
-  installs: { fontSize: 12 },
-  name: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
-  desc: { fontSize: 14, marginBottom: Spacing.three },
+  installs: { fontSize: FontSize.xs },
+  name: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold, marginBottom: 2 },
+  desc: { fontSize: FontSize.base, marginBottom: Spacing.three },
   install: { alignSelf: 'flex-start', paddingHorizontal: Spacing.four },
 });

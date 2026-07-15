@@ -10,7 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { Radius, Spacing } from '@/constants/theme';
+import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type Variant = 'default' | 'secondary' | 'outline' | 'ghost' | 'destructive';
@@ -81,7 +81,7 @@ export function Button({
           <Text
             style={[
               styles.label,
-              { color: fg[variant], fontSize: size === 'lg' ? 16 : 15 },
+              { color: fg[variant], fontSize: size === 'lg' ? FontSize.lg : FontSize.md },
             ]}>
             {label}
           </Text>
@@ -99,5 +99,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
   },
   content: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  label: { fontWeight: '600' },
+  label: { fontWeight: FontWeight.semibold },
 });
