@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, Input, Screen } from '@/components/ui';
-import { Spacing } from '@/constants/theme';
+import { FontSize, FontWeight, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
 
@@ -14,6 +14,20 @@ export function LoginScreen() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    setError(null);
+    setLoading(true);
+    try {
+      await signIn(email.trim(), password);
+    } catch {
+      setError('Email atau password salah, atau backend tidak terjangkau.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <Screen>
@@ -44,10 +58,10 @@ export function LoginScreen() {
             placeholder="••••••••"
             secureTextEntry
           />
-          <Button label="Masuk" onPress={signIn} style={styles.submit} />
-          {/* <Text style={[styles.hint, { color: theme.textSecondary }]}>
-            Mode desain — ketuk "Masuk" untuk melihat aplikasi.
-          </Text> */}
+          {error ? (
+            <Text style={[styles.error, { color: theme.destructive }]}>{error}</Text>
+          ) : null}
+          <Button label="Masuk" onPress={submit} loading={loading} style={styles.submit} />
         </View>
       </View>
     </Screen>
@@ -65,10 +79,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: Spacing.two,
   },
-  logoText: { color: '#fff', fontSize: 28, fontWeight: '700' },
-  title: { fontSize: 26, fontWeight: '700' },
-  subtitle: { fontSize: 15 },
+  logoText: { color: '#fff', fontSize: FontSize.title1, fontWeight: FontWeight.bold },
+  title: { fontSize: FontSize.title2, fontWeight: FontWeight.bold },
+  subtitle: { fontSize: FontSize.md },
   form: { gap: Spacing.three },
   submit: { marginTop: Spacing.two },
-  hint: { fontSize: 12, textAlign: 'center' },
+  error: { fontSize: FontSize.sm, textAlign: 'center' },
+  hint: { fontSize: FontSize.xs, textAlign: 'center' },
 });

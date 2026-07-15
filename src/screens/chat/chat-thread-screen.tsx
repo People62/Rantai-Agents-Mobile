@@ -1,9 +1,12 @@
 /**
- * ChatThread — tampilan percakapan (bubble user/assistant) + input bar. Dummy.
+ * ChatThread — menampilkan pesan sebuah sesi dari backend
+ * (GET /api/dashboard/chat/sessions/:id). Input bar masih tampilan (kirim
+ * pesan akan diwire pada tahap berikutnya).
  */
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,21 +16,35 @@ import {
 } from 'react-native';
 
 import { Input, Screen } from '@/components/ui';
-import { Radius, Spacing } from '@/constants/theme';
+import { FontSize, Radius, Spacing } from '@/constants/theme';
+import { ChatSessionMessage, getChatSession } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/navigation/auth-context';
 import type { ChatStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<ChatStackParamList, 'ChatThread'>;
 
-const DEMO = [
-  { id: '1', role: 'assistant', text: 'Halo! Ada yang bisa saya bantu hari ini?' },
-  { id: '2', role: 'user', text: 'Tolong ringkas penjualan minggu ini.' },
-  { id: '3', role: 'assistant', text: 'Tentu. Total penjualan minggu ini naik 12% dibanding minggu lalu, dengan 3 produk teratas menyumbang 60% pendapatan.' },
-] as const;
-
 export function ChatThreadScreen({ route }: Props) {
   const theme = useTheme();
+  const { token } = useAuth();
   const [text, setText] = useState('');
+  const [messages, setMessages] = useState<ChatSessionMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      if (!token) return;
+      try {
+        const detail = await getChatSession(token, route.params.id);
+        setMessages(detail.messages);
+      } catch {
+        setError('Gagal memuat pesan.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [token, route.params.id]);
 
   return (
     <Screen padded={false} edges={['bottom']}>
@@ -43,36 +60,36 @@ export function ChatThreadScreen({ route }: Props) {
             <Text style={{ color: theme.destructive, fontSize: FontSize.base }}>{error}</Text>
           </View>
         ) : (
-        <ScrollView contentContainerStyle={styles.messages}>
+          <ScrollView contentContainerStyle={styles.messages}>
             {messages.length === 0 ? (
               <Text style={[styles.empty, { color: theme.textSecondary }]}>
                 Belum ada pesan pada percakapan ini.
               </Text>
             ) : (
               messages.map((m) => {
-            const mine = m.role === 'user';
-            return (
-              <View
-                key={m.id}
-                style={[
-                  styles.bubble,
-                  {
-                    alignSelf: mine ? 'flex-end' : 'flex-start',
-                    backgroundColor: mine ? theme.accent : theme.backgroundElement,
-                  },
-                ]}>
+                const mine = m.role === 'user';
+                return (
+                  <View
+                    key={m.id}
+                    style={[
+                      styles.bubble,
+                      {
+                        alignSelf: mine ? 'flex-end' : 'flex-start',
+                        backgroundColor: mine ? theme.accent : theme.backgroundElement,
+                      },
+                    ]}>
                     <Text
                       style={{
                         color: mine ? theme.accentForeground : theme.text,
                         fontSize: FontSize.md,
                       }}>
                       {m.content}
-                </Text>
-              </View>
-            );
+                    </Text>
+                  </View>
+                );
               })
             )}
-        </ScrollView>
+          </ScrollView>
         )}
         <View style={[styles.inputBar, { borderTopColor: theme.border }]}>
           <View style={styles.flex}>

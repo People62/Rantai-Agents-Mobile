@@ -55,6 +55,84 @@ export async function pingBackend(): Promise<boolean> {
   }
 }
 
+// ============================================================
+// Auth mobile + riwayat chat (dashboard chat sessions)
+// ============================================================
+
+export interface MobileUser {
+  id: string
+  email: string
+  name: string | null
+  role: string
+}
+
+/** Login mobile — POST /api/mobile/login. Mengembalikan token JWT + user. */
+export async function mobileLogin(
+  email: string,
+  password: string,
+): Promise<{ token: string; user: MobileUser }> {
+  const res = await apiFetch("/api/mobile/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  })
+  return res.json()
+}
+
+/** Fetch ber-otorisasi memakai Bearer token dari login. */
+async function authFetch(
+  path: string,
+  token: string,
+  init?: RequestInit,
+): Promise<Response> {
+  return apiFetch(path, {
+    ...init,
+    headers: { Authorization: `Bearer ${token}`, ...(init?.headers ?? {}) },
+  })
+}
+
+/** Ringkasan sesi chat (satu item di daftar riwayat). */
+export interface ChatSessionSummary {
+  id: string
+  title: string
+  assistantId: string
+  createdAt: string
+  updatedAt: string
+  messageCount: number
+  lastMessage: string | null
+}
+
+/** Satu pesan dalam sebuah sesi. */
+export interface ChatSessionMessage {
+  id: string
+  role: string
+  content: string
+  createdAt?: string
+}
+
+/** Detail sesi chat beserta pesan-pesannya. */
+export interface ChatSessionDetail {
+  id: string
+  title: string
+  assistantId: string
+  createdAt: string
+  messages: ChatSessionMessage[]
+}
+
+/** Daftar riwayat chat milik user — GET /api/dashboard/chat/sessions. */
+export async function getChatSessions(token: string): Promise<ChatSessionSummary[]> {
+  const res = await authFetch("/api/dashboard/chat/sessions", token)
+  return res.json()
+}
+
+/** Detail + pesan satu sesi — GET /api/dashboard/chat/sessions/:id. */
+export async function getChatSession(
+  token: string,
+  id: string,
+): Promise<ChatSessionDetail> {
+  const res = await authFetch(`/api/dashboard/chat/sessions/${id}`, token)
+  return res.json()
+}
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant"
   content: string
