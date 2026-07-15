@@ -11,7 +11,7 @@ module.exports = {
         extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
       },
     ],
-    // react-native-reanimated/gesture-handler tidak dipakai plugin khusus di sini;
-    // 'react-native-worklets/plugin' hanya perlu bila memakai Reanimated.
+    // WAJIB paling akhir: plugin worklets untuk react-native-reanimated (v4).
+    'react-native-worklets/plugin',
   ],
 };

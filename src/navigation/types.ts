@@ -8,15 +8,19 @@ export type ChatStackParamList = {
   ChatThread: { id: string; title: string };
 };
 
-export type TabParamList = {
+export type DrawerParamList = {
   ChatTab: NavigatorScreenParams<ChatStackParamList>;
+  Search: undefined;
+  AgentBuilder: undefined;
+  Workflows: undefined;
+  MediaStudio: undefined;
+  Files: undefined;
   Marketplace: undefined;
-  Agents: undefined;
-  Knowledge: undefined;
-  More: undefined;
+  DigitalEmployees: undefined;
+  Settings: undefined;
 };
 
 export type RootStackParamList = {
   Login: undefined;
-  Main: NavigatorScreenParams<TabParamList>;
+  Main: NavigatorScreenParams<DrawerParamList>;
 };
