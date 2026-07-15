@@ -53,6 +53,33 @@ export const Radius = {
   full: 9999,
 } as const;
 
+/**
+ * Skala ukuran font (pt). Pakai token ini alih-alih angka acak agar konsisten.
+ *   xs 12 · sm 13 · base 14 · md 15 · lg 16 · xl 18 · xxl 20
+ *   title3 22 · title2 26 · title1 28
+ */
+export const FontSize = {
+  xs: 12,
+  sm: 13,
+  base: 14,
+  md: 15,
+  lg: 16,
+  xl: 18,
+  xxl: 20,
+  title3: 22,
+  title2: 26,
+  title1: 28,
+} as const;
+
+/** Bobot font standar (nilai literal agar cocok dengan tipe TextStyle). */
+export const FontWeight = {
+  regular: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+  extrabold: '800',
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
