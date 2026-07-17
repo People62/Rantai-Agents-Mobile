@@ -1,8 +1,8 @@
 /**
- * Auth context — autentikasi asli ke backend RantAI Agents.
+ * Auth context — real authentication against the RantAI Agents backend.
  *
- * Menyimpan JWT + data user di AsyncStorage sehingga sesi bertahan setelah
- * app ditutup. Token dipakai sebagai Bearer untuk endpoint terproteksi.
+ * Stores the JWT + user data in AsyncStorage so the session persists after the
+ * app is closed. The token is used as a Bearer for protected endpoints.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -20,12 +20,12 @@ const TOKEN_KEY = 'auth.token';
 const USER_KEY = 'auth.user';
 
 type AuthValue = {
-  /** true selama memuat token tersimpan saat startup. */
+  /** true while loading the saved token at startup. */
   loading: boolean;
   signedIn: boolean;
   token: string | null;
   user: MobileUser | null;
-  /** Login ke backend; melempar error bila gagal (ditangani UI). */
+  /** Log in to the backend; throws an error on failure (handled by the UI). */
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<MobileUser | null>(null);
 
-  // Muat sesi tersimpan sekali saat startup.
+  // Load the saved session once at startup.
   useEffect(() => {
     (async () => {
       try {
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(savedUser ? JSON.parse(savedUser) : null);
         }
       } catch {
-        // abaikan — perlakukan sebagai belum login
+        // ignore — treat as not logged in
       } finally {
         setLoading(false);
       }
@@ -85,6 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth harus dipakai di dalam AuthProvider');
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
   return ctx;
 }

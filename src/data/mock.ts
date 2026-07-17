@@ -1,6 +1,6 @@
 /**
- * Data contoh (dummy) untuk fase desain UI — TIDAK terhubung backend.
- * Ganti dengan data asli dari src/lib/api.ts saat integrasi nanti.
+ * Sample (dummy) data for the UI design phase — NOT connected to the backend.
+ * Replace with real data from src/lib/api.ts during integration later.
  */
 
 export type Conversation = {
@@ -12,10 +12,10 @@ export type Conversation = {
 };
 
 export const conversations: Conversation[] = [
-  { id: '1', title: 'Sales Assistant', lastMessage: 'Tentu, ini ringkasan penjualan bulan ini…', time: '09:24', unread: 2 },
-  { id: '2', title: 'Support Bot', lastMessage: 'Tiket #4821 sudah ditutup.', time: 'Kemarin' },
-  { id: '3', title: 'Riset Pasar', lastMessage: 'Saya menemukan 3 tren utama…', time: 'Kemarin' },
-  { id: '4', title: 'HR Onboarding', lastMessage: 'Selamat datang! Berikut langkah pertama…', time: 'Sen' },
+  { id: '1', title: 'Sales Assistant', lastMessage: 'Sure, here is this month\'s sales summary…', time: '09:24', unread: 2 },
+  { id: '2', title: 'Support Bot', lastMessage: 'Ticket #4821 has been closed.', time: 'Yesterday' },
+  { id: '3', title: 'Market Research', lastMessage: 'I found 3 major trends…', time: 'Yesterday' },
+  { id: '4', title: 'HR Onboarding', lastMessage: 'Welcome! Here are the first steps…', time: 'Mon' },
 ];
 
 export type MarketItem = {
@@ -27,10 +27,10 @@ export type MarketItem = {
 };
 
 export const marketItems: MarketItem[] = [
-  { id: 'm1', name: 'Customer Support Pro', description: 'Agen dukungan pelanggan multibahasa.', category: 'Assistant', installs: '12K' },
-  { id: 'm2', name: 'Web Search', description: 'Pencarian web real-time untuk agen.', category: 'Tool', installs: '48K' },
-  { id: 'm3', name: 'PDF Reader', description: 'Ekstrak & tanya-jawab dokumen PDF.', category: 'Skill', installs: '31K' },
-  { id: 'm4', name: 'Sales Analyst', description: 'Analisis data penjualan otomatis.', category: 'Assistant', installs: '8K' },
+  { id: 'm1', name: 'Customer Support Pro', description: 'Multilingual customer support agent.', category: 'Assistant', installs: '12K' },
+  { id: 'm2', name: 'Web Search', description: 'Real-time web search for agents.', category: 'Tool', installs: '48K' },
+  { id: 'm3', name: 'PDF Reader', description: 'Extract & answer questions from PDF documents.', category: 'Skill', installs: '31K' },
+  { id: 'm4', name: 'Sales Analyst', description: 'Automated sales data analysis.', category: 'Assistant', installs: '8K' },
 ];
 
 export type Agent = {
@@ -54,7 +54,7 @@ export type KnowledgeFile = {
 };
 
 export const knowledgeFiles: KnowledgeFile[] = [
-  { id: 'f1', name: 'Panduan Produk 2026.pdf', size: '2.4 MB', type: 'PDF' },
-  { id: 'f2', name: 'FAQ Pelanggan.docx', size: '640 KB', type: 'DOCX' },
-  { id: 'f3', name: 'Data Penjualan Q2.csv', size: '1.1 MB', type: 'CSV' },
+  { id: 'f1', name: 'Product Guide 2026.pdf', size: '2.4 MB', type: 'PDF' },
+  { id: 'f2', name: 'Customer FAQ.docx', size: '640 KB', type: 'DOCX' },
+  { id: 'f3', name: 'Q2 Sales Data.csv', size: '1.1 MB', type: 'CSV' },
 ];
