@@ -1,5 +1,5 @@
 /**
- * Screen — pembungkus dasar tiap layar: latar bertema + safe area.
+ * Screen — base wrapper for every screen: themed background + safe area.
  */
 import { ReactNode } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
@@ -10,7 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 type ScreenProps = {
   children: ReactNode;
-  /** Beri padding horizontal standar. Default true. */
+  /** Apply standard horizontal padding. Default true. */
   padded?: boolean;
   edges?: Edge[];
   style?: ViewStyle;

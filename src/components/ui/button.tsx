@@ -1,5 +1,5 @@
 /**
- * Button — mengikuti varian shadcn/ui web (default/outline/ghost/destructive/secondary).
+ * Button — follows the shadcn/ui web variants (default/outline/ghost/destructive/secondary).
  */
 import {
   ActivityIndicator,

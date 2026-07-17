@@ -1,12 +1,12 @@
 /**
- * Design tokens untuk Rantai-Agent-Mobile.
+ * Design tokens for Rantai-Agent-Mobile.
  *
- * Diadaptasi dari sistem desain web RantAI-Agents (shadcn/ui + Tailwind v4).
- * Nilai oklch web sudah dikonversi ke HEX untuk React Native. Estetika:
- * off-white hangat + aksi hitam monokrom + aksen biru brand (#0071DF).
+ * Adapted from the RantAI-Agents web design system (shadcn/ui + Tailwind v4).
+ * The web oklch values have been converted to HEX for React Native. Aesthetic:
+ * warm off-white + monochrome black actions + brand blue accent (#0071DF).
  *
- * Catatan: key `background`, `text`, `backgroundElement`, `backgroundSelected`,
- * `textSecondary` dipertahankan agar kompatibel dengan komponen lama.
+ * Note: the keys `background`, `text`, `backgroundElement`, `backgroundSelected`,
+ * `textSecondary` are kept for compatibility with older components.
  */
 
 import { Platform } from 'react-native';
@@ -15,13 +15,13 @@ export const Colors = {
   light: {
     text: '#0B0B0B', // foreground
     textSecondary: '#555555', // muted-foreground
-    background: '#F9F8F7', // off-white hangat
+    background: '#F9F8F7', // warm off-white
     card: '#FFFFFF',
     backgroundElement: '#EFEBE4', // secondary
     backgroundSelected: '#E8E4DD', // muted
-    primary: '#0B0B0B', // aksi utama (hitam)
+    primary: '#0B0B0B', // primary action (black)
     primaryForeground: '#F9F8F7',
-    accent: '#0071DF', // biru brand
+    accent: '#0071DF', // brand blue
     accentForeground: '#FFFFFF',
     border: '#DBD7D0',
     destructive: '#E7000B',
@@ -29,22 +29,22 @@ export const Colors = {
   dark: {
     text: '#FAFAFA',
     textSecondary: '#A1A1A1',
-    background: '#0A0A0A',
-    card: '#0A0A0A',
-    backgroundElement: '#262626',
-    backgroundSelected: '#262626',
+    background: '#1E1E20', // dark grey (not pure black #000)
+    card: '#282829', // slightly lighter than background so cards stand out
+    backgroundElement: '#333335',
+    backgroundSelected: '#3D3D40',
     primary: '#FAFAFA',
     primaryForeground: '#0A0A0A',
-    accent: '#0071DF', // biru tetap dipakai untuk link/highlight
+    accent: '#0071DF', // blue still used for links/highlights
     accentForeground: '#FFFFFF',
-    border: '#262626',
+    border: '#3A3A3C',
     destructive: '#82181A',
   },
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
-/** Skala border-radius (base 12px), diselaraskan dengan web (--radius). */
+/** Border-radius scale (base 12px), aligned with the web (--radius). */
 export const Radius = {
   sm: 8,
   md: 10,
@@ -54,7 +54,7 @@ export const Radius = {
 } as const;
 
 /**
- * Skala ukuran font (pt). Pakai token ini alih-alih angka acak agar konsisten.
+ * Font size scale (pt). Use these tokens instead of arbitrary numbers for consistency.
  *   xs 12 · sm 13 · base 14 · md 15 · lg 16 · xl 18 · xxl 20
  *   title3 22 · title2 26 · title1 28
  */
@@ -71,13 +71,26 @@ export const FontSize = {
   title1: 28,
 } as const;
 
-/** Bobot font standar (nilai literal agar cocok dengan tipe TextStyle). */
+/** Standard font weights (literal values so they match the TextStyle type). */
 export const FontWeight = {
   regular: '400',
   medium: '500',
   semibold: '600',
   bold: '700',
   extrabold: '800',
+} as const;
+
+/**
+ * Poppins font families per weight. Use these where the global Text patch does
+ * NOT reach — e.g. text rendered by React Navigation (drawer labels, native
+ * header titles) which is drawn by library components, not our own <Text>.
+ */
+export const FontFamily = {
+  light: 'Poppins-Light',
+  regular: 'Poppins-Regular',
+  medium: 'Poppins-Medium',
+  semibold: 'Poppins-SemiBold',
+  bold: 'Poppins-Bold',
 } as const;
 
 export const Fonts = Platform.select({

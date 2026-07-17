@@ -1,5 +1,5 @@
 /**
- * Card — kontainer bertema dengan border hairline & sudut membulat (shadcn card).
+ * Card — themed container with a hairline border & rounded corners (shadcn card).
  */
 import { StyleSheet, View, type ViewProps } from 'react-native';
 

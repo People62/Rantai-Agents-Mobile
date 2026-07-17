@@ -1,5 +1,5 @@
 /**
- * Input — text field bertema dengan label & fokus aksen biru (shadcn input).
+ * Input — themed text field with a label & blue accent focus (shadcn input).
  */
 import { forwardRef, useState } from 'react';
 import {

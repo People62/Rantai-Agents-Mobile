@@ -1,5 +1,5 @@
 /**
- * Badge — label kecil (default/secondary/accent/outline).
+ * Badge — small label (default/secondary/accent/outline).
  */
 import { StyleSheet, Text, View } from 'react-native';
 

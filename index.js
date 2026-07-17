@@ -4,6 +4,8 @@
  * @format
  */
 import 'react-native-gesture-handler';
+// Terapkan font Poppins ke seluruh Text/TextInput (harus sebelum App dirender).
+import './src/lib/fonts';
 
 import { AppRegistry } from 'react-native';
 

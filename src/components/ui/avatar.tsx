@@ -1,5 +1,5 @@
 /**
- * Avatar — inisial di dalam lingkaran bertema (fallback tanpa gambar).
+ * Avatar — initials inside a themed circle (fallback when there's no image).
  */
 import { StyleSheet, Text, View } from 'react-native';
 
