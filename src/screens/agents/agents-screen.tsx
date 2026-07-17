@@ -1,5 +1,5 @@
 /**
- * Agents — daftar digital employees / agen (data dummy).
+ * Agents — list of digital employees / agents (dummy data).
  */
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
@@ -34,7 +34,7 @@ export function AgentsScreen() {
                   ]}
                 />
                 <Text style={[styles.status, { color: theme.textSecondary }]}>
-                  {item.status === 'active' ? 'Aktif' : 'Idle'}
+                  {item.status === 'active' ? 'Active' : 'Idle'}
                 </Text>
               </View>
             </View>

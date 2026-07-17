@@ -1,5 +1,5 @@
 /**
- * Marketplace — grid kartu item (Assistant/Skill/Tool). Dummy.
+ * Marketplace — grid of item cards (Assistant/Skill/Tool). Dummy.
  */
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -9,13 +9,13 @@ import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { marketItems } from '@/data/mock';
 import { useTheme } from '@/hooks/use-theme';
 
-const TABS = ['Semua', 'Assistant', 'Skill', 'Tool'] as const;
+const TABS = ['All', 'Assistant', 'Skill', 'Tool'] as const;
 
 export function MarketplaceScreen() {
   const theme = useTheme();
-  const [tab, setTab] = useState<(typeof TABS)[number]>('Semua');
+  const [tab, setTab] = useState<(typeof TABS)[number]>('All');
 
-  const data = tab === 'Semua' ? marketItems : marketItems.filter((m) => m.category === tab);
+  const data = tab === 'All' ? marketItems : marketItems.filter((m) => m.category === tab);
 
   return (
     <Screen padded={false} edges={['bottom']}>
@@ -50,12 +50,12 @@ export function MarketplaceScreen() {
             <View style={styles.cardTop}>
               <Badge label={item.category} variant="secondary" />
               <Text style={[styles.installs, { color: theme.textSecondary }]}>
-                {item.installs} pemasangan
+                {item.installs} installs
               </Text>
             </View>
             <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
             <Text style={[styles.desc, { color: theme.textSecondary }]}>{item.description}</Text>
-            <Button label="Pasang" size="sm" variant="outline" style={styles.install} />
+            <Button label="Install" size="sm" variant="outline" style={styles.install} />
           </Card>
         )}
       />

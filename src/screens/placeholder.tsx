@@ -1,6 +1,6 @@
 /**
- * Placeholder — screen sementara untuk fitur yang belum dibangun (fase desain).
- * Dipakai untuk Search, Agent Builder, Workflows, Media Studio, Settings.
+ * Placeholder — temporary screen for features not yet built (design phase).
+ * Used for Search, Agent Builder, Workflows, Media Studio, Settings.
  */
 import { LucideIcon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';

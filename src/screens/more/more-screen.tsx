@@ -1,6 +1,6 @@
 /**
- * More — menu ke seksi sekunder (Workflows, Media, Settings, dll.) + keluar.
- * Semua item placeholder untuk fase desain.
+ * More — menu to secondary sections (Workflows, Media, Settings, etc.) + log out.
+ * All items are placeholders for the design phase.
  */
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -10,12 +10,12 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
 
 const ITEMS = [
-  { key: 'workflows', label: 'Workflows', desc: 'Pipeline & otomasi agen' },
-  { key: 'media', label: 'Media Studio', desc: 'Generasi gambar / audio / video' },
-  { key: 'agent-builder', label: 'Agent Builder', desc: 'Konfigurasi asisten AI' },
-  { key: 'audit', label: 'Audit Log', desc: 'Riwayat aktivitas' },
-  { key: 'organization', label: 'Organisasi', desc: 'Anggota & tim' },
-  { key: 'settings', label: 'Pengaturan', desc: 'Umum, kredensial, MCP' },
+  { key: 'workflows', label: 'Workflows', desc: 'Agent pipelines & automation' },
+  { key: 'media', label: 'Media Studio', desc: 'Image / audio / video generation' },
+  { key: 'agent-builder', label: 'Agent Builder', desc: 'Configure AI assistants' },
+  { key: 'audit', label: 'Audit Log', desc: 'Activity history' },
+  { key: 'organization', label: 'Organization', desc: 'Members & teams' },
+  { key: 'settings', label: 'Settings', desc: 'General, credentials, MCP' },
 ];
 
 export function MoreScreen() {
@@ -25,7 +25,7 @@ export function MoreScreen() {
   return (
     <Screen padded={false} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.title, { color: theme.text }]}>Lainnya</Text>
+        <Text style={[styles.title, { color: theme.text }]}>More</Text>
 
         <Card style={styles.profile}>
           <View style={styles.profileRow}>
@@ -56,7 +56,7 @@ export function MoreScreen() {
           ))}
         </View>
 
-        <Button label="Keluar" variant="outline" onPress={signOut} style={styles.signOut} />
+        <Button label="Log out" variant="outline" onPress={signOut} style={styles.signOut} />
       </ScrollView>
     </Screen>
   );

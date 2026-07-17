@@ -1,5 +1,5 @@
 /**
- * Knowledge — daftar file basis pengetahuan (RAG). Data dummy.
+ * Knowledge — list of knowledge base files (RAG). Dummy data.
  */
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
@@ -32,7 +32,7 @@ export function KnowledgeScreen() {
                 </Text>
                 <Text style={[styles.size, { color: theme.textSecondary }]}>{item.size}</Text>
               </View>
-              <Badge label="Terindeks" variant="secondary" />
+              <Badge label="Indexed" variant="secondary" />
             </View>
           </Card>
         )}
