@@ -1,6 +1,6 @@
 /**
- * DrawerContent — isi sidebar kustom, meniru sidebar web RantAI Agents:
- * header logo + daftar menu (DrawerItemList) + footer profil & keluar.
+ * DrawerContent — custom sidebar content, mirroring the RantAI Agents web sidebar:
+ * logo header + menu list (DrawerItemList) + profile & log-out footer.
  */
 import {
   DrawerContentComponentProps,
@@ -10,7 +10,7 @@ import {
 import { LogOut } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Avatar } from '@/components/ui';
+import { Avatar, Logo } from '@/components/ui';
 import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from './auth-context';
@@ -18,24 +18,22 @@ import { useAuth } from './auth-context';
 export function DrawerContent(props: DrawerContentComponentProps) {
   const theme = useTheme();
   const { signOut, user } = useAuth();
-  const displayName = user?.name || user?.email || 'Pengguna';
+  const displayName = user?.name || user?.email || 'User';
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       {/* Header logo */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <View style={[styles.logo, { backgroundColor: theme.text }]}>
-          <Text style={[styles.logoText, { color: theme.background }]}>R</Text>
-        </View>
+        <Logo width={40} />
         <Text style={[styles.brand, { color: theme.text }]}>RantAI Agents</Text>
       </View>
 
-      {/* Daftar menu */}
+      {/* Menu list */}
       <DrawerContentScrollView {...props} contentContainerStyle={styles.items}>
         <DrawerItemList {...props} />
       </DrawerContentScrollView>
 
-      {/* Footer profil + keluar */}
+      {/* Profile + log-out footer */}
       <View style={[styles.footer, { borderTopColor: theme.border }]}>
         <View style={styles.profile}>
           <Avatar name={displayName} size={36} />
@@ -73,14 +71,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.three,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  logo: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold },
   brand: { fontSize: FontSize.lg, fontWeight: FontWeight.bold },
   items: { paddingTop: Spacing.two },
   footer: {

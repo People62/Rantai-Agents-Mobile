@@ -1,6 +1,6 @@
 /**
- * ChatStack — daftar chat → thread. ChatList menampilkan tombol hamburger
- * untuk membuka Drawer; ChatThread memakai tombol back bawaan.
+ * ChatStack — chat list → thread. ChatList shows the hamburger button to open
+ * the Drawer; ChatThread uses the default back button.
  */
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -11,7 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { ChatListScreen } from '@/screens/chat/chat-list-screen';
 import { ChatThreadScreen } from '@/screens/chat/chat-thread-screen';
 import type { ChatStackParamList, DrawerParamList } from './types';
-import { Spacing } from '@/constants/theme';
+import { FontFamily, Spacing } from '@/constants/theme';
 
 const Stack = createNativeStackNavigator<ChatStackParamList>();
 
@@ -23,7 +23,7 @@ export function ChatStack() {
       screenOptions={{
         headerStyle: { backgroundColor: theme.background },
         headerTintColor: theme.text,
-        headerTitleStyle: { fontWeight: '700' },
+        headerTitleStyle: { fontFamily: FontFamily.bold },
         headerShadowVisible: false,
       }}>
       <Stack.Screen
