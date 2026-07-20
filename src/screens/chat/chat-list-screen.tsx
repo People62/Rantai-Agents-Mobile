@@ -2,9 +2,10 @@
  * ChatList — list of the user's conversation history from the backend
  * (GET /api/dashboard/chat/sessions, Bearer token). Tap to open a thread.
  */
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pencil, Search, Trash2 } from 'lucide-react-native';
+import { MessageCirclePlus, Pencil, Search, Trash2 } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,14 +23,16 @@ import {
 import { Button, Screen } from '@/components/ui';
 import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
+  Agent,
   ChatSessionSummary,
   deleteChatSession,
+  getAgents,
   getChatSessions,
   renameChatSession,
 } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
-import type { ChatStackParamList } from '@/navigation/types';
+import type { ChatStackParamList, DrawerParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<ChatStackParamList, 'ChatList'>;
 
@@ -69,6 +72,8 @@ export function ChatListScreen({ navigation }: Props) {
   const theme = useTheme();
   const { token } = useAuth();
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  /** Map assistantId → agent, to show the agent's emoji on each history row. */
+  const [agentsById, setAgentsById] = useState<Record<string, Agent>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -144,7 +149,14 @@ export function ChatListScreen({ navigation }: Props) {
     if (!token) return;
     setError(null);
     try {
-      setSessions(await getChatSessions(token));
+      const [sessionList, agentData] = await Promise.all([
+        getChatSessions(token),
+        getAgents(token).catch(() => ({ assistants: [] as Agent[], defaultAssistantId: null })),
+      ]);
+      setSessions(sessionList);
+      const map: Record<string, Agent> = {};
+      for (const a of agentData.assistants) map[a.id] = a;
+      setAgentsById(map);
     } catch {
       setError('Failed to load history. Tap to try again.');
     } finally {
@@ -238,6 +250,11 @@ export function ChatListScreen({ navigation }: Props) {
               styles.row,
               pressed && { backgroundColor: theme.backgroundElement },
             ]}>
+            <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
+              <Text style={styles.avatarEmoji}>
+                {agentsById[item.assistantId]?.emoji ?? '💬'}
+              </Text>
+            </View>
             <View style={styles.rowText}>
               <View style={styles.rowTop}>
                 <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
@@ -254,6 +271,19 @@ export function ChatListScreen({ navigation }: Props) {
           </Pressable>
         )}
       />
+
+      {/* FAB — start a new chat (opens the compose landing with the agent picker) */}
+      <Pressable
+        onPress={() =>
+          navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Home')
+        }
+        style={({ pressed }) => [
+          styles.fab,
+          { backgroundColor: theme.accent, opacity: pressed ? 0.9 : 1 },
+        ]}
+        hitSlop={8}>
+        <MessageCirclePlus color={theme.accentForeground} size={26} />
+      </Pressable>
 
       {/* Action menu (long-press on an item) */}
       <Modal
@@ -404,12 +434,35 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     // backgroundColor: 'red'
   },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEmoji: { fontSize: 22 },
   rowText: { flex: 1, gap: 2, marginHorizontal: Spacing.two },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
   name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, flex: 1 },
   time: { fontSize: FontSize.xs },
   preview: { fontSize: FontSize.base },
   sep: { height: StyleSheet.hairlineWidth },
+  fab: {
+    position: 'absolute',
+    right: Spacing.four,
+    bottom: Spacing.four,
+    width: 56,
+    height: 56,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
 
   // --- Modal ---
   backdrop: {
