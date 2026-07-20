@@ -26,6 +26,7 @@ import { MarketplaceScreen } from '@/screens/marketplace/marketplace-screen';
 import { NewChatScreen } from '@/screens/chat/new-chat-screen';
 import { makePlaceholder } from '@/screens/placeholder';
 import { DrawerContent } from './drawer-content';
+import { AgentStack } from './agent-stack';
 import { ChatStack } from './chat-stack';
 import type { DrawerParamList } from './types';
 
@@ -83,16 +84,32 @@ export function AppDrawer() {
           headerShown: false,
           drawerIcon: ({ color }) => <MessageCircle color={color} size={FontSize.xxl} />,
         }}
+        listeners={({ navigation }) => ({
+          // Tapping "Chat" always lands on the history list, not whatever thread
+          // was last open in the stack (otherwise it re-opens the old thread).
+          drawerItemPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('ChatTab', { screen: 'ChatList' });
+          },
+        })}
       />
        
-      {/* <Drawer.Screen
+      <Drawer.Screen
         name="AgentBuilder"
-        component={AgentBuilderScreen}
-        options={{ 
-          title: 'Agent Builder', 
+        component={AgentStack}
+        options={{
+          title: 'Agents',
           headerShown: false,
-          drawerIcon: ({ color }) => <Bot color={color} size={FontSize.xxl} /> }}
-      /> */}
+          drawerIcon: ({ color }) => <Bot color={color} size={FontSize.xxl} />,
+        }}
+        listeners={({ navigation }) => ({
+          // Same as Chat: land on the agent list, not a half-open editor.
+          drawerItemPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('AgentBuilder', { screen: 'AgentList' });
+          },
+        })}
+      />
       {/*
       <Drawer.Screen
         name="Workflows"
