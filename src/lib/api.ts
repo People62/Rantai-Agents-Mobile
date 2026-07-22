@@ -733,3 +733,219 @@ export function mediaFileSource(
   if (download) params.set("download", "1")
   return { uri: `${API_URL}/api/mobile/media/assets/${assetId}/file?${params.toString()}` }
 }
+
+// ============================================================
+// Files / Knowledge Base — /api/mobile/knowledge
+// ============================================================
+
+export interface KnowledgeGroup {
+  id: string
+  name: string
+  description: string | null
+  color: string | null
+  documentCount?: number
+}
+
+export interface KnowledgeDocumentGroupRef {
+  id: string
+  name: string
+  color?: string | null
+}
+
+/** A document as returned by the list endpoint (lightweight, no content). */
+export interface KnowledgeDocumentListItem {
+  id: string
+  title: string
+  categories: string[]
+  subcategory?: string | null
+  fileType: string | null
+  fileSize: number | null
+  hasS3File?: boolean
+  chunkCount: number
+  groups: KnowledgeDocumentGroupRef[]
+}
+
+export interface KnowledgeChunk {
+  content: string
+  chunkIndex?: number
+}
+
+/** Full document detail: extracted content + chunks. */
+export interface KnowledgeDocumentDetail {
+  id: string
+  title: string
+  content: string
+  categories: string[]
+  subcategory?: string | null
+  fileType: string | null
+  fileSize: number | null
+  mimeType: string | null
+  s3Key: string | null
+  fileUrl?: string | null
+  chunks: KnowledgeChunk[]
+  groups: KnowledgeDocumentGroupRef[]
+}
+
+export interface KnowledgeCategory {
+  id: string
+  name: string
+  label: string
+  color: string | null
+  isSystem: boolean
+}
+
+/** List knowledge bases (groups) — GET /api/mobile/knowledge/groups. */
+export async function getKnowledgeGroups(
+  token: string,
+): Promise<{ groups: KnowledgeGroup[]; totalDocumentCount: number }> {
+  const res = await authFetch("/api/mobile/knowledge/groups", token)
+  return res.json()
+}
+
+/** Create a knowledge base — POST /api/mobile/knowledge/groups. */
+export async function createKnowledgeGroup(
+  token: string,
+  input: { name: string; description?: string; color?: string },
+): Promise<KnowledgeGroup> {
+  const res = await authFetch("/api/mobile/knowledge/groups", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Delete a knowledge base (documents kept) — DELETE /api/mobile/knowledge/groups/:id. */
+export async function deleteKnowledgeGroup(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/knowledge/groups/${id}`, token, { method: "DELETE" })
+}
+
+/** List documents (optionally within a group) — GET /api/mobile/knowledge/documents. */
+export async function getKnowledgeDocuments(
+  token: string,
+  groupId?: string,
+): Promise<{ documents: KnowledgeDocumentListItem[] }> {
+  const qs = groupId ? `?groupId=${encodeURIComponent(groupId)}` : ""
+  const res = await authFetch(`/api/mobile/knowledge/documents${qs}`, token)
+  return res.json()
+}
+
+/** Document detail with content + chunks — GET /api/mobile/knowledge/documents/:id. */
+export async function getKnowledgeDocument(
+  token: string,
+  id: string,
+): Promise<KnowledgeDocumentDetail> {
+  const res = await authFetch(`/api/mobile/knowledge/documents/${id}`, token)
+  return res.json()
+}
+
+/** Update document metadata — PUT /api/mobile/knowledge/documents/:id. */
+export async function updateKnowledgeDocument(
+  token: string,
+  id: string,
+  input: { title?: string; categories?: string[]; subcategory?: string | null; groupIds?: string[] },
+): Promise<KnowledgeDocumentListItem> {
+  const res = await authFetch(`/api/mobile/knowledge/documents/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Delete a document — DELETE /api/mobile/knowledge/documents/:id (?hard=true to purge). */
+export async function deleteKnowledgeDocument(
+  token: string,
+  id: string,
+  hard = false,
+): Promise<void> {
+  const qs = hard ? "?hard=true" : ""
+  await authFetch(`/api/mobile/knowledge/documents/${id}${qs}`, token, { method: "DELETE" })
+}
+
+/**
+ * Upload a document file — POST /api/mobile/knowledge/documents (multipart).
+ * Ingestion (extract + OCR + chunk + embed) is synchronous and can take a while,
+ * so callers should show a "processing" state and use a long timeout.
+ */
+export async function uploadKnowledgeDocument(
+  token: string,
+  file: { uri: string; name: string; type: string },
+  opts?: { title?: string; categories?: string[]; subcategory?: string; groupIds?: string[]; enhanced?: boolean },
+): Promise<{ id: string; title: string; chunkCount?: number }> {
+  const form = new FormData()
+  form.append("file", { uri: file.uri, name: file.name, type: file.type } as never)
+  if (opts?.title) form.append("title", opts.title)
+  if (opts?.categories?.length) form.append("categories", JSON.stringify(opts.categories))
+  if (opts?.subcategory) form.append("subcategory", opts.subcategory)
+  if (opts?.groupIds?.length) form.append("groupIds", JSON.stringify(opts.groupIds))
+  if (opts?.enhanced === false) form.append("enhanced", "false")
+
+  const res = await fetch(`${API_URL}/api/mobile/knowledge/documents`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  if (!res.ok) throw new ApiError(res.status, await res.text().catch(() => ""))
+  return res.json()
+}
+
+/** List category tags — GET /api/mobile/knowledge/categories. */
+export async function getKnowledgeCategories(
+  token: string,
+): Promise<{ categories: KnowledgeCategory[] }> {
+  const res = await authFetch("/api/mobile/knowledge/categories", token)
+  return res.json()
+}
+
+/** Create a category tag — POST /api/mobile/knowledge/categories. */
+export async function createKnowledgeCategory(
+  token: string,
+  input: { label: string; color?: string },
+): Promise<KnowledgeCategory> {
+  const res = await authFetch("/api/mobile/knowledge/categories", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Build an <Image> source URI for a document's original file (image docs). */
+export function knowledgeFileSource(token: string, id: string): { uri: string } {
+  return { uri: `${API_URL}/api/mobile/knowledge/documents/${id}/file?token=${encodeURIComponent(token)}` }
+}
+
+/** An entity extracted from a document (knowledge graph node). */
+export interface KnowledgeEntity {
+  id: string
+  name: string
+  type: string
+  confidence: number
+}
+
+/** A relation between two entities (edge; `in`/`out` are entity ids). */
+export interface KnowledgeRelation {
+  id: string
+  in: string
+  out: string
+  relation_type: string
+  confidence: number
+}
+
+export interface DocumentIntelligence {
+  entities: KnowledgeEntity[]
+  relations: KnowledgeRelation[]
+  stats: {
+    totalEntities: number
+    totalRelations: number
+    entityTypes: number
+    relationTypes: number
+  }
+}
+
+/** Entities + relations for a document — GET .../documents/:id/intelligence. */
+export async function getDocumentIntelligence(
+  token: string,
+  id: string,
+): Promise<DocumentIntelligence> {
+  const res = await authFetch(`/api/mobile/knowledge/documents/${id}/intelligence`, token)
+  return res.json()
+}
