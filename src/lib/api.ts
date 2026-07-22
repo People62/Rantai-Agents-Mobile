@@ -314,6 +314,108 @@ export async function deleteChatMessages(
   })
 }
 
+// ============================================================
+// Agent Builder (assistants) — /api/mobile/assistants
+// ============================================================
+
+/** An agent (assistant) as returned by the mobile API. */
+export interface Agent {
+  id: string
+  name: string
+  description: string | null
+  emoji: string
+  systemPrompt: string
+  model: string
+  isBuiltIn: boolean
+  isSystemDefault: boolean
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+  /** Number of tools bound to the agent (list endpoint only). */
+  toolCount?: number
+}
+
+/** Fields accepted when creating or editing an agent (MVP subset). */
+export interface AgentInput {
+  name: string
+  systemPrompt: string
+  description?: string | null
+  emoji?: string
+  model?: string
+}
+
+/** A selectable model for the agent editor dropdown. */
+export interface AgentModel {
+  id: string
+  name: string
+  provider: string
+  hasToolCalling: boolean
+  isFree: boolean
+}
+
+/**
+ * List agents visible to the user, plus the user's personal default agent id —
+ * GET /api/mobile/assistants.
+ */
+export async function getAgents(
+  token: string,
+): Promise<{ assistants: Agent[]; defaultAssistantId: string | null }> {
+  const res = await authFetch("/api/mobile/assistants", token)
+  return res.json()
+}
+
+/** A single agent — GET /api/mobile/assistants/:id. */
+export async function getAgent(token: string, id: string): Promise<Agent> {
+  const res = await authFetch(`/api/mobile/assistants/${id}`, token)
+  return res.json()
+}
+
+/** Create an agent — POST /api/mobile/assistants. */
+export async function createAgent(token: string, input: AgentInput): Promise<Agent> {
+  const res = await authFetch("/api/mobile/assistants", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Update an agent — PUT /api/mobile/assistants/:id. */
+export async function updateAgent(
+  token: string,
+  id: string,
+  input: Partial<AgentInput>,
+): Promise<Agent> {
+  const res = await authFetch(`/api/mobile/assistants/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Delete an agent — DELETE /api/mobile/assistants/:id. */
+export async function deleteAgent(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/assistants/${id}`, token, { method: "DELETE" })
+}
+
+/** Duplicate an agent — POST /api/mobile/assistants/:id/duplicate. */
+export async function duplicateAgent(token: string, id: string): Promise<Agent> {
+  const res = await authFetch(`/api/mobile/assistants/${id}/duplicate`, token, {
+    method: "POST",
+  })
+  return res.json()
+}
+
+/** Set the user's default agent — POST /api/mobile/assistants/:id/default. */
+export async function setDefaultAgent(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/assistants/${id}/default`, token, { method: "POST" })
+}
+
+/** Models available for the agent editor — GET /api/mobile/models. */
+export async function getModels(token: string): Promise<AgentModel[]> {
+  const res = await authFetch("/api/mobile/models", token)
+  return res.json()
+}
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant"
   content: string

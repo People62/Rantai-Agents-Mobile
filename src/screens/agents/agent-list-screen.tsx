@@ -1,11 +1,11 @@
 /**
- * ChatList — list of the user's conversation history from the backend
- * (GET /api/dashboard/chat/sessions, Bearer token). Tap to open a thread.
+ * AgentList — the user's agents (assistants) from the backend
+ * (GET /api/mobile/assistants, Bearer token). Tap to edit; long-press for
+ * actions (Duplicate / Set as Default / Delete). "+" in the header creates one.
  */
-import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { MessageCirclePlus, Pencil, Search, Trash2 } from 'lucide-react-native';
+import { Copy, Pencil, Search, Star, Trash2 } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,94 +24,87 @@ import { Button, Screen } from '@/components/ui';
 import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   Agent,
-  ChatSessionSummary,
-  deleteChatSession,
+  deleteAgent,
+  duplicateAgent,
   getAgents,
-  getChatSessions,
-  renameChatSession,
+  setDefaultAgent,
 } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
-import type { ChatStackParamList, DrawerParamList } from '@/navigation/types';
+import type { AgentStackParamList } from '@/navigation/types';
 
-type Props = NativeStackScreenProps<ChatStackParamList, 'ChatList'>;
+type Props = NativeStackScreenProps<AgentStackParamList, 'AgentList'>;
 
-/** Relative time, e.g. "2 minutes ago" (manual, without Intl so it's safe on Hermes). */
-function relativeTime(iso: string): string {
-  const diff = Math.max(0, Date.now() - new Date(iso).getTime());
-  const minute = 60_000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-
-  if (diff < minute) return 'just now';
-  if (diff < hour) {
-    const n = Math.floor(diff / minute);
-    return `${n} minute${n === 1 ? '' : 's'} ago`;
-  }
-  if (diff < day) {
-    const n = Math.floor(diff / hour);
-    return `${n} hour${n === 1 ? '' : 's'} ago`;
-  }
-  if (diff < 7 * day) {
-    const n = Math.floor(diff / day);
-    return `${n} day${n === 1 ? '' : 's'} ago`;
-  }
-  if (diff < 30 * day) {
-    const n = Math.floor(diff / (7 * day));
-    return `${n} week${n === 1 ? '' : 's'} ago`;
-  }
-  if (diff < 365 * day) {
-    const n = Math.floor(diff / (30 * day));
-    return `${n} month${n === 1 ? '' : 's'} ago`;
-  }
-  const n = Math.floor(diff / (365 * day));
-  return `${n} year${n === 1 ? '' : 's'} ago`;
-}
-
-export function ChatListScreen({ navigation }: Props) {
+export function AgentListScreen({ navigation }: Props) {
   const theme = useTheme();
   const { token } = useAuth();
-  const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
-  /** Map assistantId → agent, to show the agent's emoji on each history row. */
-  const [agentsById, setAgentsById] = useState<Record<string, Agent>>({});
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [defaultId, setDefaultId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  /** Session whose action menu is open (long-press on an item). */
-  const [selected, setSelected] = useState<ChatSessionSummary | null>(null);
-  /** Session currently being renamed. */
-  const [renaming, setRenaming] = useState<ChatSessionSummary | null>(null);
-  const [renameText, setRenameText] = useState('');
-  /** Session awaiting delete confirmation. */
-  const [deleting, setDeleting] = useState<ChatSessionSummary | null>(null);
+  const [selected, setSelected] = useState<Agent | null>(null);
+  const [deleting, setDeleting] = useState<Agent | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  function openRename() {
+  const load = useCallback(async () => {
+    if (!token) return;
+    setError(null);
+    try {
+      const { assistants, defaultAssistantId } = await getAgents(token);
+      setAgents(assistants);
+      setDefaultId(defaultAssistantId);
+    } catch {
+      setError('Failed to load agents. Tap to try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  function edit() {
     if (!selected) return;
-    setRenaming(selected);
-    setRenameText(selected.title ?? '');
+    const id = selected.id;
     setSelected(null);
+    navigation.navigate('AgentEditor', { id });
   }
 
-  async function submitRename() {
-    const title = renameText.trim();
-    if (!renaming || !token || !title || busy) return;
+  async function doDuplicate() {
+    if (!selected || !token || busy) return;
+    const source = selected;
+    setSelected(null);
     setBusy(true);
     try {
-      await renameChatSession(token, renaming.id, title);
-      setSessions((prev) =>
-        prev.map((s) => (s.id === renaming.id ? { ...s, title } : s)),
-      );
-      setRenaming(null);
+      const copy = await duplicateAgent(token, source.id);
+      setAgents((prev) => [copy, ...prev]);
     } catch {
-      Alert.alert('Failed', 'Could not rename. Try again.');
+      Alert.alert('Failed', 'Could not duplicate the agent. Try again.');
     } finally {
       setBusy(false);
     }
   }
 
-  /** Open the delete confirmation dialog (themed, replacing the OS Alert). */
+  async function makeDefault() {
+    if (!selected || !token || busy) return;
+    const target = selected;
+    setSelected(null);
+    setBusy(true);
+    try {
+      await setDefaultAgent(token, target.id);
+      setDefaultId(target.id);
+    } catch {
+      Alert.alert('Failed', 'Could not set the default agent. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function askDelete() {
     if (!selected) return;
     setDeleting(selected);
@@ -124,8 +117,8 @@ export function ChatListScreen({ navigation }: Props) {
     setBusy(true);
     setDeleteError(null);
     try {
-      await deleteChatSession(token, deleting.id);
-      setSessions((prev) => prev.filter((s) => s.id !== deleting.id));
+      await deleteAgent(token, deleting.id);
+      setAgents((prev) => prev.filter((a) => a.id !== deleting.id));
       setDeleting(null);
     } catch {
       setDeleteError('Failed to delete. Try again.');
@@ -134,43 +127,15 @@ export function ChatListScreen({ navigation }: Props) {
     }
   }
 
-  // Filter by title or last-message snippet.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return sessions;
-    return sessions.filter(
-      (s) =>
-        (s.title ?? '').toLowerCase().includes(q) ||
-        (s.lastMessage ?? '').toLowerCase().includes(q),
+    if (!q) return agents;
+    return agents.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        (a.description ?? '').toLowerCase().includes(q),
     );
-  }, [sessions, query]);
-
-  const load = useCallback(async () => {
-    if (!token) return;
-    setError(null);
-    try {
-      const [sessionList, agentData] = await Promise.all([
-        getChatSessions(token),
-        getAgents(token).catch(() => ({ assistants: [] as Agent[], defaultAssistantId: null })),
-      ]);
-      setSessions(sessionList);
-      const map: Record<string, Agent> = {};
-      for (const a of agentData.assistants) map[a.id] = a;
-      setAgentsById(map);
-    } catch {
-      setError('Failed to load history. Tap to try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  // Reload whenever the screen gains focus (e.g. returning from a thread), so
-  // new conversations appear immediately without a manual pull-to-refresh.
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  }, [agents, query]);
 
   if (loading) {
     return (
@@ -209,7 +174,7 @@ export function ChatListScreen({ navigation }: Props) {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search conversations…"
+            placeholder="Search agents…"
             placeholderTextColor={theme.textSecondary}
             style={[styles.searchInput, { color: theme.text }]}
             autoCapitalize="none"
@@ -220,7 +185,7 @@ export function ChatListScreen({ navigation }: Props) {
       </View>
       <FlatList
         data={filtered}
-        keyExtractor={(s) => s.id}
+        keyExtractor={(a) => a.id}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={filtered.length ? styles.list : styles.emptyWrap}
         refreshControl={
@@ -229,13 +194,20 @@ export function ChatListScreen({ navigation }: Props) {
         ListEmptyComponent={
           <View style={styles.centered}>
             <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              {query ? 'No results' : 'No conversations yet'}
+              {query ? 'No results' : 'No agents yet'}
             </Text>
             <Text style={[styles.muted, { color: theme.textSecondary }]}>
               {query
-                ? `No conversations match "${query}".`
-                : 'New conversations will appear here.'}
+                ? `No agents match "${query}".`
+                : 'Create your first agent with the + button.'}
             </Text>
+            {!query ? (
+              <Button
+                label="Create agent"
+                onPress={() => navigation.navigate('AgentEditor')}
+                style={styles.emptyBtn}
+              />
+            ) : null}
           </View>
         }
         ItemSeparatorComponent={() => (
@@ -243,7 +215,7 @@ export function ChatListScreen({ navigation }: Props) {
         )}
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => navigation.navigate('ChatThread', { id: item.id, title: item.title })}
+            onPress={() => navigation.navigate('AgentEditor', { id: item.id })}
             onLongPress={() => setSelected(item)}
             delayLongPress={300}
             style={({ pressed }) => [
@@ -251,41 +223,29 @@ export function ChatListScreen({ navigation }: Props) {
               pressed && { backgroundColor: theme.backgroundElement },
             ]}>
             <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
-              <Text style={styles.avatarEmoji}>
-                {agentsById[item.assistantId]?.emoji ?? '💬'}
-              </Text>
+              <Text style={styles.avatarEmoji}>{item.emoji || '🤖'}</Text>
             </View>
             <View style={styles.rowText}>
               <View style={styles.rowTop}>
                 <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
-                  {item.title || 'Untitled'}
+                  {item.name}
                 </Text>
+                {item.id === defaultId ? (
+                  <View style={[styles.badge, { backgroundColor: `${theme.accent}22` }]}>
+                    <Star color={theme.accent} size={11} fill={theme.accent} />
+                    <Text style={[styles.badgeText, { color: theme.accent }]}>Default</Text>
+                  </View>
+                ) : null}
               </View>
               <Text style={[styles.preview, { color: theme.textSecondary }]} numberOfLines={1}>
-                {item.lastMessage ?? 'No messages yet'}
-              </Text>
-              <Text style={[styles.time, { color: theme.textSecondary }]}>
-                {relativeTime(item.updatedAt)}
+                {item.description?.trim() || item.model}
               </Text>
             </View>
           </Pressable>
         )}
       />
 
-      {/* FAB — start a new chat (opens the compose landing with the agent picker) */}
-      <Pressable
-        onPress={() =>
-          navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Home')
-        }
-        style={({ pressed }) => [
-          styles.fab,
-          { backgroundColor: theme.accent, opacity: pressed ? 0.9 : 1 },
-        ]}
-        hitSlop={8}>
-        <MessageCirclePlus color={theme.accentForeground} size={26} />
-      </Pressable>
-
-      {/* Action menu (long-press on an item) */}
+      {/* Action menu (long-press) */}
       <Modal
         visible={!!selected}
         transparent
@@ -295,72 +255,53 @@ export function ChatListScreen({ navigation }: Props) {
           <Pressable
             style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <Text style={[styles.sheetTitle, { color: theme.textSecondary }]} numberOfLines={1}>
-              {selected?.title || 'Untitled'}
+              {selected?.name}
             </Text>
             <Pressable
-              onPress={openRename}
+              onPress={edit}
               style={({ pressed }) => [
                 styles.sheetItem,
                 pressed && { backgroundColor: theme.backgroundElement },
               ]}>
               <Pencil color={theme.text} size={20} />
-              <Text style={[styles.sheetLabel, { color: theme.text }]}>Rename</Text>
+              <Text style={[styles.sheetLabel, { color: theme.text }]}>Edit</Text>
             </Pressable>
             <Pressable
-              onPress={askDelete}
+              onPress={doDuplicate}
               style={({ pressed }) => [
                 styles.sheetItem,
                 pressed && { backgroundColor: theme.backgroundElement },
               ]}>
-              <Trash2 color={theme.destructive} size={20} />
-              <Text style={[styles.sheetLabel, { color: theme.destructive }]}>Delete</Text>
+              <Copy color={theme.text} size={20} />
+              <Text style={[styles.sheetLabel, { color: theme.text }]}>Duplicate</Text>
             </Pressable>
+            {selected && selected.id !== defaultId ? (
+              <Pressable
+                onPress={makeDefault}
+                style={({ pressed }) => [
+                  styles.sheetItem,
+                  pressed && { backgroundColor: theme.backgroundElement },
+                ]}>
+                <Star color={theme.text} size={20} />
+                <Text style={[styles.sheetLabel, { color: theme.text }]}>Set as Default</Text>
+              </Pressable>
+            ) : null}
+            {selected && !selected.isBuiltIn ? (
+              <Pressable
+                onPress={askDelete}
+                style={({ pressed }) => [
+                  styles.sheetItem,
+                  pressed && { backgroundColor: theme.backgroundElement },
+                ]}>
+                <Trash2 color={theme.destructive} size={20} />
+                <Text style={[styles.sheetLabel, { color: theme.destructive }]}>Delete</Text>
+              </Pressable>
+            ) : null}
           </Pressable>
         </Pressable>
       </Modal>
 
-      {/* Rename dialog */}
-      <Modal
-        visible={!!renaming}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setRenaming(null)}>
-        <Pressable style={styles.backdrop} onPress={() => setRenaming(null)}>
-          <Pressable
-            style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.dialogTitle, { color: theme.text }]}>Rename conversation</Text>
-            <TextInput
-              value={renameText}
-              onChangeText={setRenameText}
-              placeholder="Conversation title"
-              placeholderTextColor={theme.textSecondary}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={submitRename}
-              style={[
-                styles.dialogInput,
-                { color: theme.text, borderColor: theme.border, backgroundColor: theme.background },
-              ]}
-            />
-            <View style={styles.dialogActions}>
-              <Button
-                label="Cancel"
-                variant="outline"
-                onPress={() => setRenaming(null)}
-                style={styles.dialogBtn}
-              />
-              <Button
-                label="Save"
-                onPress={submitRename}
-                loading={busy}
-                style={styles.dialogBtn}
-              />
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* Delete confirmation dialog */}
+      {/* Delete confirmation */}
       <Modal
         visible={!!deleting}
         transparent
@@ -375,11 +316,11 @@ export function ChatListScreen({ navigation }: Props) {
               <Trash2 color={theme.destructive} size={26} />
             </View>
             <Text style={[styles.dialogTitle, styles.textCenter, { color: theme.text }]}>
-              Delete conversation?
+              Delete agent?
             </Text>
             <Text style={[styles.dialogMessage, { color: theme.textSecondary }]}>
               <Text style={{ color: theme.text, fontWeight: FontWeight.semibold }}>
-                {deleting?.title || 'Untitled'}
+                {deleting?.name}
               </Text>
               {' will be permanently deleted. This action cannot be undone.'}
             </Text>
@@ -412,6 +353,7 @@ export function ChatListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.one, padding: Spacing.four },
   emptyWrap: { flexGrow: 1 },
+  emptyBtn: { marginTop: Spacing.three, minWidth: 180 },
   searchWrap: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.two },
   searchBar: {
     flexDirection: 'row',
@@ -432,7 +374,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingVertical: Spacing.three,
     borderRadius: 12,
-    // backgroundColor: 'red'
   },
   avatar: {
     width: 44,
@@ -442,27 +383,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarEmoji: { fontSize: 22 },
-  rowText: { flex: 1, gap: 2, marginHorizontal: Spacing.two },
-  rowTop: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
-  name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, flex: 1 },
-  time: { fontSize: FontSize.xs },
+  rowText: { flex: 1, gap: 2 },
+  rowTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, flexShrink: 1 },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+  },
+  badgeText: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold },
   preview: { fontSize: FontSize.base },
   sep: { height: StyleSheet.hairlineWidth },
-  fab: {
-    position: 'absolute',
-    right: Spacing.four,
-    bottom: Spacing.four,
-    width: 56,
-    height: 56,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
 
   // --- Modal ---
   backdrop: {
@@ -511,19 +445,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'center',
   },
-  dialogMessage: {
-    fontSize: FontSize.base,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+  dialogMessage: { fontSize: FontSize.base, textAlign: 'center', lineHeight: 20 },
   dialogError: { fontSize: FontSize.sm, textAlign: 'center' },
-  dialogInput: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    paddingHorizontal: Spacing.three,
-    fontSize: FontSize.md,
-  },
   dialogActions: { flexDirection: 'row', gap: Spacing.two },
   dialogBtn: { flex: 1 },
 });

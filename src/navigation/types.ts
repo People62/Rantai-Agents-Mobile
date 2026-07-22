@@ -17,12 +17,18 @@ export type ChatStackParamList = {
   };
 };
 
+export type AgentStackParamList = {
+  AgentList: undefined;
+  /** Agent editor — `id` present = edit an existing agent, absent = create. */
+  AgentEditor: { id?: string } | undefined;
+};
+
 export type DrawerParamList = {
   Home: undefined;
   NewChat: undefined;
   ChatTab: NavigatorScreenParams<ChatStackParamList>;
   Search: undefined;
-  AgentBuilder: undefined;
+  AgentBuilder: NavigatorScreenParams<AgentStackParamList>;
   Workflows: undefined;
   MediaStudio: undefined;
   Files: undefined;
