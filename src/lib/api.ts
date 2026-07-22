@@ -581,3 +581,155 @@ export async function setWorkflowStatus(
 export async function deleteWorkflow(token: string, id: string): Promise<void> {
   await authFetch(`/api/mobile/workflows/${id}`, token, { method: "DELETE" })
 }
+
+// ============================================================
+// Media Studio — /api/mobile/media (image + audio generation)
+// ============================================================
+
+export type MediaModality = "IMAGE" | "AUDIO" | "VIDEO"
+export type MediaJobStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED"
+
+export interface MediaAsset {
+  id: string
+  jobId: string
+  modality: MediaModality
+  mimeType: string
+  sizeBytes: number
+  width: number | null
+  height: number | null
+  durationMs: number | null
+  isFavorite: boolean
+  createdAt: string
+  /** Present on the gallery list (asset joined with its job). */
+  job?: { prompt?: string; modelId?: string } | null
+}
+
+export interface MediaJob {
+  id: string
+  modality: MediaModality
+  modelId: string
+  prompt: string
+  status: MediaJobStatus
+  errorMessage: string | null
+  assets: MediaAsset[]
+  createdAt: string
+}
+
+export interface MediaModel {
+  id: string
+  name: string
+  provider: string
+  isFree: boolean
+  outputModalities: string[]
+  inputModalities: string[]
+}
+
+export interface GenerateMediaInput {
+  modality: MediaModality
+  modelId: string
+  prompt: string
+  parameters?: Record<string, unknown>
+  referenceAssetIds?: string[]
+}
+
+/** Models that can output the given modality — GET /api/mobile/media/models. */
+export async function getMediaModels(
+  token: string,
+  modality: MediaModality,
+): Promise<MediaModel[]> {
+  const res = await authFetch(`/api/mobile/media/models?modality=${modality}`, token)
+  return res.json()
+}
+
+/**
+ * Generate media (image/audio) — POST /api/mobile/media/jobs. Synchronous: the
+ * response contains the finished job with its assets.
+ */
+export async function generateMedia(
+  token: string,
+  input: GenerateMediaInput,
+): Promise<MediaJob> {
+  const res = await authFetch("/api/mobile/media/jobs", token, {
+    method: "POST",
+    body: JSON.stringify({
+      parameters: {},
+      referenceAssetIds: [],
+      ...input,
+    }),
+  })
+  return res.json()
+}
+
+/** The org's media library — GET /api/mobile/media/assets. */
+export async function getMediaAssets(
+  token: string,
+  opts?: { modality?: MediaModality; favorite?: boolean; q?: string; limit?: number },
+): Promise<{ items: MediaAsset[]; nextCursor?: string | null }> {
+  const params = new URLSearchParams()
+  if (opts?.modality) params.set("modality", opts.modality)
+  if (opts?.favorite) params.set("favorite", "true")
+  if (opts?.q) params.set("q", opts.q)
+  if (opts?.limit) params.set("limit", String(opts.limit))
+  const qs = params.toString()
+  const res = await authFetch(`/api/mobile/media/assets${qs ? `?${qs}` : ""}`, token)
+  return res.json()
+}
+
+/** A single asset — GET /api/mobile/media/assets/:id. */
+export async function getMediaAsset(token: string, id: string): Promise<MediaAsset> {
+  const res = await authFetch(`/api/mobile/media/assets/${id}`, token)
+  return res.json()
+}
+
+/** Toggle favorite — PATCH /api/mobile/media/assets/:id. */
+export async function favoriteMediaAsset(
+  token: string,
+  id: string,
+  isFavorite: boolean,
+): Promise<MediaAsset> {
+  const res = await authFetch(`/api/mobile/media/assets/${id}`, token, {
+    method: "PATCH",
+    body: JSON.stringify({ isFavorite }),
+  })
+  return res.json()
+}
+
+/** Delete an asset — DELETE /api/mobile/media/assets/:id. */
+export async function deleteMediaAsset(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/media/assets/${id}`, token, { method: "DELETE" })
+}
+
+/**
+ * Upload an image to use as a reference — POST /api/mobile/media/uploads.
+ * Returns the created asset id (pass it in `referenceAssetIds`).
+ */
+export async function uploadMediaReference(
+  token: string,
+  file: { uri: string; name: string; type: string },
+): Promise<{ assetId: string }> {
+  const form = new FormData()
+  form.append("file", { uri: file.uri, name: file.name, type: file.type } as never)
+  const res = await fetch(`${API_URL}/api/mobile/media/uploads`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  if (!res.ok) throw new ApiError(res.status, await res.text().catch(() => ""))
+  return res.json()
+}
+
+/**
+ * Build an <Image>/<Video> source URI for an asset's bytes (served via the proxy
+ * so the phone never needs to reach the internal S3 host). The token goes in the
+ * query string because RN's <Image>/<Video> can't reliably send auth headers on
+ * Android. Add download=true to force an attachment disposition.
+ */
+export function mediaFileSource(
+  token: string,
+  assetId: string,
+  download = false,
+): { uri: string } {
+  const params = new URLSearchParams({ token })
+  if (download) params.set("download", "1")
+  return { uri: `${API_URL}/api/mobile/media/assets/${assetId}/file?${params.toString()}` }
+}
