@@ -36,6 +36,13 @@ export type MediaStackParamList = {
   MediaAsset: { id: string };
 };
 
+export type FilesStackParamList = {
+  FilesHome: undefined;
+  /** Documents list; scoped to a KB group when `groupId` is set. */
+  KnowledgeDocs: { groupId?: string; groupName?: string } | undefined;
+  KnowledgeDocDetail: { id: string; title: string };
+};
+
 export type DrawerParamList = {
   Home: undefined;
   NewChat: undefined;
@@ -44,7 +51,7 @@ export type DrawerParamList = {
   AgentBuilder: NavigatorScreenParams<AgentStackParamList>;
   Workflows: NavigatorScreenParams<WorkflowStackParamList>;
   MediaStudio: NavigatorScreenParams<MediaStackParamList>;
-  Files: undefined;
+  Files: NavigatorScreenParams<FilesStackParamList>;
   Marketplace: undefined;
   DigitalEmployees: undefined;
   Settings: undefined;

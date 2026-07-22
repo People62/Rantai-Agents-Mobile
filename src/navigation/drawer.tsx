@@ -28,6 +28,7 @@ import { makePlaceholder } from '@/screens/placeholder';
 import { DrawerContent } from './drawer-content';
 import { AgentStack } from './agent-stack';
 import { ChatStack } from './chat-stack';
+import { FilesStack } from './files-stack';
 import { MediaStack } from './media-stack';
 import { WorkflowStack } from './workflow-stack';
 import type { DrawerParamList } from './types';
@@ -139,6 +140,21 @@ export function AppDrawer() {
           drawerItemPress: (e) => {
             e.preventDefault();
             navigation.navigate('MediaStudio', { screen: 'MediaGenerate' });
+          },
+        })}
+      />
+      <Drawer.Screen
+        name="Files"
+        component={FilesStack}
+        options={{
+          title: 'Files',
+          headerShown: false,
+          drawerIcon: ({ color }) => <Folder color={color} size={FontSize.xxl} />,
+        }}
+        listeners={({ navigation }) => ({
+          drawerItemPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('Files', { screen: 'FilesHome' });
           },
         })}
       />
