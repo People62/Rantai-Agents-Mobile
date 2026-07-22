@@ -441,3 +441,143 @@ export async function chatCompletion(params: {
   const data = await res.json()
   return data?.choices?.[0]?.message?.content ?? ""
 }
+
+// ============================================================
+// Workflows — /api/mobile/workflows (run & monitor, read-only builder)
+// ============================================================
+
+export type WorkflowStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "ARCHIVED"
+export type WorkflowMode = "STANDARD" | "CHATFLOW"
+export type WorkflowCategory = "TASK" | "CHATFLOW" | "AUTOMATION"
+export type RunStatus = "PENDING" | "RUNNING" | "PAUSED" | "COMPLETED" | "FAILED"
+
+/** A node in the workflow graph (we only read a few fields for display). */
+export interface WorkflowNode {
+  id: string
+  type?: string
+  /** React Flow canvas coordinates (top-left), used by the diagram view. */
+  position?: { x: number; y: number }
+  data?: Record<string, unknown>
+}
+
+export interface WorkflowEdge {
+  id?: string
+  source: string
+  target: string
+  sourceHandle?: string | null
+}
+
+/** A declared input/output variable of a workflow. */
+export interface WorkflowVariable {
+  name: string
+  type?: string
+  description?: string
+  required?: boolean
+}
+
+export interface Workflow {
+  id: string
+  name: string
+  description: string | null
+  status: WorkflowStatus
+  mode: WorkflowMode
+  category: WorkflowCategory
+  tags: string[]
+  nodes: WorkflowNode[]
+  edges: WorkflowEdge[]
+  trigger: { type?: string } | null
+  variables: { inputs?: WorkflowVariable[]; outputs?: WorkflowVariable[] } | null
+  createdAt: string
+  updatedAt: string
+  _count?: { runs: number }
+}
+
+/** One step's trace entry within a run (StepLogEntry on the backend). */
+export interface WorkflowStep {
+  stepId: string
+  nodeId: string
+  nodeType: string
+  label: string
+  status: string
+  input?: unknown
+  output?: unknown
+  error?: string
+  durationMs?: number
+  startedAt?: string
+  completedAt?: string
+  tokenUsage?: { total?: number; prompt?: number; completion?: number } | null
+}
+
+export interface WorkflowRun {
+  id: string
+  workflowId: string
+  status: RunStatus
+  input: unknown
+  output?: unknown
+  error?: string | null
+  steps: WorkflowStep[]
+  startedAt: string
+  completedAt?: string | null
+}
+
+/** List workflows visible to the user — GET /api/mobile/workflows. */
+export async function getWorkflows(token: string): Promise<Workflow[]> {
+  const res = await authFetch("/api/mobile/workflows", token)
+  return res.json()
+}
+
+/** A single workflow — GET /api/mobile/workflows/:id. */
+export async function getWorkflow(token: string, id: string): Promise<Workflow> {
+  const res = await authFetch(`/api/mobile/workflows/${id}`, token)
+  return res.json()
+}
+
+/**
+ * Run a workflow — POST /api/mobile/workflows/:id/execute. Returns the created
+ * run (status RUNNING); poll {@link getWorkflowRun} for progress.
+ */
+export async function runWorkflow(
+  token: string,
+  id: string,
+  input: Record<string, unknown>,
+): Promise<WorkflowRun> {
+  const res = await authFetch(`/api/mobile/workflows/${id}/execute`, token, {
+    method: "POST",
+    body: JSON.stringify({ input }),
+  })
+  return res.json()
+}
+
+/** Run history (last 50) — GET /api/mobile/workflows/:id/runs. */
+export async function getWorkflowRuns(token: string, id: string): Promise<WorkflowRun[]> {
+  const res = await authFetch(`/api/mobile/workflows/${id}/runs`, token)
+  return res.json()
+}
+
+/** One run with its full step trace — GET /api/mobile/workflows/:id/runs/:runId. */
+export async function getWorkflowRun(
+  token: string,
+  id: string,
+  runId: string,
+): Promise<WorkflowRun> {
+  const res = await authFetch(`/api/mobile/workflows/${id}/runs/${runId}`, token)
+  return res.json()
+}
+
+/** Change a workflow's status (deploy/pause/archive) — PUT /api/mobile/workflows/:id. */
+export async function setWorkflowStatus(
+  token: string,
+  id: string,
+  status: WorkflowStatus,
+): Promise<Workflow> {
+  const res = await authFetch(`/api/mobile/workflows/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  })
+  return res.json()
+}
+
+/** Delete a workflow — DELETE /api/mobile/workflows/:id. */
+export async function deleteWorkflow(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/workflows/${id}`, token, { method: "DELETE" })
+}

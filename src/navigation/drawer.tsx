@@ -28,6 +28,7 @@ import { makePlaceholder } from '@/screens/placeholder';
 import { DrawerContent } from './drawer-content';
 import { AgentStack } from './agent-stack';
 import { ChatStack } from './chat-stack';
+import { WorkflowStack } from './workflow-stack';
 import type { DrawerParamList } from './types';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
@@ -107,6 +108,21 @@ export function AppDrawer() {
           drawerItemPress: (e) => {
             e.preventDefault();
             navigation.navigate('AgentBuilder', { screen: 'AgentList' });
+          },
+        })}
+      />
+      <Drawer.Screen
+        name="Workflows"
+        component={WorkflowStack}
+        options={{
+          title: 'Workflows',
+          headerShown: false,
+          drawerIcon: ({ color }) => <Workflow color={color} size={FontSize.xxl} />,
+        }}
+        listeners={({ navigation }) => ({
+          drawerItemPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('Workflows', { screen: 'WorkflowList' });
           },
         })}
       />

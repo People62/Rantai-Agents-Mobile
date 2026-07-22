@@ -23,13 +23,19 @@ export type AgentStackParamList = {
   AgentEditor: { id?: string } | undefined;
 };
 
+export type WorkflowStackParamList = {
+  WorkflowList: undefined;
+  WorkflowDetail: { id: string; name: string };
+  WorkflowRunDetail: { workflowId: string; runId: string; name?: string };
+};
+
 export type DrawerParamList = {
   Home: undefined;
   NewChat: undefined;
   ChatTab: NavigatorScreenParams<ChatStackParamList>;
   Search: undefined;
   AgentBuilder: NavigatorScreenParams<AgentStackParamList>;
-  Workflows: undefined;
+  Workflows: NavigatorScreenParams<WorkflowStackParamList>;
   MediaStudio: undefined;
   Files: undefined;
   Marketplace: undefined;
