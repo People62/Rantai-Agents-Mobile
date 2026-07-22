@@ -29,6 +29,13 @@ export type WorkflowStackParamList = {
   WorkflowRunDetail: { workflowId: string; runId: string; name?: string };
 };
 
+export type MediaStackParamList = {
+  /** Generate screen; `referenceAssetId` pre-adds an image reference. */
+  MediaGenerate: { referenceAssetId?: string } | undefined;
+  MediaGallery: undefined;
+  MediaAsset: { id: string };
+};
+
 export type DrawerParamList = {
   Home: undefined;
   NewChat: undefined;
@@ -36,7 +43,7 @@ export type DrawerParamList = {
   Search: undefined;
   AgentBuilder: NavigatorScreenParams<AgentStackParamList>;
   Workflows: NavigatorScreenParams<WorkflowStackParamList>;
-  MediaStudio: undefined;
+  MediaStudio: NavigatorScreenParams<MediaStackParamList>;
   Files: undefined;
   Marketplace: undefined;
   DigitalEmployees: undefined;
