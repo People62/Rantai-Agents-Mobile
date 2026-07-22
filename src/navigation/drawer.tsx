@@ -28,6 +28,7 @@ import { makePlaceholder } from '@/screens/placeholder';
 import { DrawerContent } from './drawer-content';
 import { AgentStack } from './agent-stack';
 import { ChatStack } from './chat-stack';
+import { MediaStack } from './media-stack';
 import { WorkflowStack } from './workflow-stack';
 import type { DrawerParamList } from './types';
 
@@ -123,6 +124,21 @@ export function AppDrawer() {
           drawerItemPress: (e) => {
             e.preventDefault();
             navigation.navigate('Workflows', { screen: 'WorkflowList' });
+          },
+        })}
+      />
+      <Drawer.Screen
+        name="MediaStudio"
+        component={MediaStack}
+        options={{
+          title: 'Media Studio',
+          headerShown: false,
+          drawerIcon: ({ color }) => <Clapperboard color={color} size={FontSize.xxl} />,
+        }}
+        listeners={({ navigation }) => ({
+          drawerItemPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('MediaStudio', { screen: 'MediaGenerate' });
           },
         })}
       />
