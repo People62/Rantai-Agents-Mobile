@@ -1,9 +1,9 @@
 /**
- * API client untuk backend RantAI Agents.
+ * API client for the RantAI Agents backend.
  *
- * Base URL dibaca dari .env (key API_URL) via react-native-config. Tidak ada
- * URL yang di-hardcode, sehingga transisi dev -> produksi cukup mengganti .env
- * lalu build ulang aplikasi.
+ * The base URL is read from .env (key API_URL) via react-native-config. No URL
+ * is hardcoded, so moving from dev -> production is just a matter of changing
+ * .env and rebuilding the app.
  */
 
 import Config from "react-native-config"
@@ -24,7 +24,7 @@ export class ApiError extends Error {
   }
 }
 
-/** Fetch dasar ke backend dengan header JSON + penanganan error seragam. */
+/** Base fetch to the backend with JSON headers + uniform error handling. */
 export async function apiFetch(
   path: string,
   init?: RequestInit,
@@ -43,8 +43,8 @@ export async function apiFetch(
 }
 
 /**
- * Cek apakah backend terjangkau dari HP. Mengembalikan true bila server
- * merespons (status apa pun < 500). Berguna untuk layar diagnostik koneksi.
+ * Check whether the backend is reachable from the phone. Returns true if the
+ * server responds (any status < 500). Useful for a connection diagnostics screen.
  */
 export async function pingBackend(): Promise<boolean> {
   try {
@@ -55,14 +55,273 @@ export async function pingBackend(): Promise<boolean> {
   }
 }
 
+// ============================================================
+// Mobile auth + chat history (dashboard chat sessions)
+// ============================================================
+
+export interface MobileUser {
+  id: string
+  email: string
+  name: string | null
+  role: string
+}
+
+/** Mobile login — POST /api/mobile/login. Returns a JWT token + user. */
+export async function mobileLogin(
+  email: string,
+  password: string,
+): Promise<{ token: string; user: MobileUser }> {
+  const res = await apiFetch("/api/mobile/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  })
+  return res.json()
+}
+
+/** Authorized fetch using the Bearer token from login. */
+async function authFetch(
+  path: string,
+  token: string,
+  init?: RequestInit,
+): Promise<Response> {
+  return apiFetch(path, {
+    ...init,
+    headers: { Authorization: `Bearer ${token}`, ...(init?.headers ?? {}) },
+  })
+}
+
+/** Chat session summary (one item in the history list). */
+export interface ChatSessionSummary {
+  id: string
+  title: string
+  assistantId: string
+  createdAt: string
+  updatedAt: string
+  messageCount: number
+  lastMessage: string | null
+}
+
+/** A single message within a session. */
+export interface ChatSessionMessage {
+  id: string
+  role: string
+  content: string
+  createdAt?: string
+  /** Id of the message being replied to (reply feature). */
+  replyTo?: string | null
+}
+
+/** Artifact produced by Canvas (HTML, React, SVG, etc.). */
+export interface ChatArtifact {
+  id: string
+  title: string
+  content: string
+  artifactType: string | null
+  metadata?: Record<string, unknown> | null
+}
+
+/** Chat session detail along with its messages & artifacts. */
+export interface ChatSessionDetail {
+  id: string
+  title: string
+  assistantId: string
+  createdAt: string
+  messages: ChatSessionMessage[]
+  artifacts?: ChatArtifact[]
+}
+
+/** The user's chat history list — GET /api/dashboard/chat/sessions. */
+export async function getChatSessions(token: string): Promise<ChatSessionSummary[]> {
+  const res = await authFetch("/api/dashboard/chat/sessions", token)
+  return res.json()
+}
+
+/**
+ * Create a new session/conversation — POST /api/dashboard/chat/sessions.
+ * assistantId "general" = the default assistant ("Just Chat").
+ */
+export async function createChatSession(
+  token: string,
+  assistantId: string,
+  title?: string,
+): Promise<ChatSessionSummary> {
+  const res = await authFetch("/api/dashboard/chat/sessions", token, {
+    method: "POST",
+    body: JSON.stringify({ assistantId, ...(title ? { title } : {}) }),
+  })
+  return res.json()
+}
+
+/** Rename a session — PATCH /api/dashboard/chat/sessions/:id. */
+export async function renameChatSession(
+  token: string,
+  id: string,
+  title: string,
+): Promise<{ id: string; title: string }> {
+  const res = await authFetch(`/api/dashboard/chat/sessions/${id}`, token, {
+    method: "PATCH",
+    body: JSON.stringify({ title }),
+  })
+  return res.json()
+}
+
+/** Delete a session — DELETE /api/dashboard/chat/sessions/:id. */
+export async function deleteChatSession(token: string, id: string): Promise<void> {
+  await authFetch(`/api/dashboard/chat/sessions/${id}`, token, { method: "DELETE" })
+}
+
+/** Detail + messages of a single session — GET /api/dashboard/chat/sessions/:id. */
+export async function getChatSession(
+  token: string,
+  id: string,
+): Promise<ChatSessionDetail> {
+  const res = await authFetch(`/api/dashboard/chat/sessions/${id}`, token)
+  return res.json()
+}
+
+/**
+ * Save messages to a session — POST /api/dashboard/chat/sessions/:id/messages.
+ * The backend only stores the messages (it does not generate an AI reply).
+ * Returns the stored messages along with their real ids from the database.
+ */
+export async function sendChatMessages(
+  token: string,
+  sessionId: string,
+  messages: { role: "user" | "assistant"; content: string }[],
+): Promise<{ messages: ChatSessionMessage[] }> {
+  const res = await authFetch(
+    `/api/dashboard/chat/sessions/${sessionId}/messages`,
+    token,
+    { method: "POST", body: JSON.stringify({ messages }) },
+  )
+  return res.json()
+}
+
+/**
+ * Send a message & get the AI reply (non-streaming) — POST /api/mobile/chat.
+ * The backend stores the user message, generates an AI reply, saves it, then
+ * returns the reply text.
+ */
+/** A skill that can be selected in the composer. */
+export interface Skill {
+  id: string
+  displayName: string
+  description: string
+  icon: string | null
+}
+
+/** The user's skill list — GET /api/mobile/skills. */
+export async function getSkills(token: string): Promise<Skill[]> {
+  const res = await authFetch("/api/mobile/skills", token)
+  return res.json()
+}
+
+/** Result of the backend processing an attachment. */
+export interface UploadedAttachment {
+  /** "inline" = text extracted successfully; "rag" = stored as a document. */
+  type: "inline" | "rag"
+  /** Extracted text (for type "inline"). */
+  text?: string
+  documentId?: string
+  fileId?: string
+}
+
+/**
+ * Upload an attachment — POST /api/chat/upload (multipart).
+ * Note: deliberately does NOT use apiFetch because the Content-Type header must
+ * be left empty so React Native can fill in its own multipart boundary.
+ */
+export async function uploadAttachment(
+  token: string,
+  sessionId: string,
+  file: { uri: string; name: string; type: string },
+): Promise<UploadedAttachment> {
+  const form = new FormData()
+  form.append("file", { uri: file.uri, name: file.name, type: file.type } as never)
+  form.append("sessionId", sessionId)
+
+  const res = await fetch(`${API_URL}/api/chat/upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  if (!res.ok) {
+    throw new ApiError(res.status, await res.text().catch(() => ""))
+  }
+  const data = await res.json()
+  return data?.result ?? data
+}
+
+export interface ChatTools {
+  /** Allow the AI to search the web before answering. */
+  enableWebSearch?: boolean
+  /** Allow the AI to run code in a sandbox (requires Piston active on the backend). */
+  enableCodeInterpreter?: boolean
+  /** Names of other built-in tools that are enabled (e.g. "calculator", "date_time"). */
+  enabledToolNames?: string[]
+  /** Ids of enabled skills; their prompts are injected by the backend into the system prompt. */
+  enabledSkillIds?: string[]
+  /**
+   * Canvas mode: "auto" (AI decides) or one of the artifact types
+   * (e.g. "text/html", "application/react"). Empty = Canvas off.
+   */
+  canvasMode?: string
+  /** Attachment text injected as context. */
+  fileContext?: string
+}
+
+export async function sendChatAndReply(
+  token: string,
+  sessionId: string,
+  content: string,
+  tools?: ChatTools,
+  /** Id of the message being replied to — quoted into the prompt & stored as a relation. */
+  replyTo?: string,
+): Promise<{ reply: string }> {
+  const res = await authFetch("/api/mobile/chat", token, {
+    method: "POST",
+    body: JSON.stringify({ sessionId, content, ...tools, replyTo }),
+  })
+  return res.json()
+}
+
+/**
+ * Regenerate the last reply — POST /api/mobile/chat/regenerate.
+ * The backend discards the last assistant reply and generates a new one;
+ * the user message is not duplicated.
+ */
+export async function regenerateReply(
+  token: string,
+  sessionId: string,
+  tools?: ChatTools,
+): Promise<{ reply: string }> {
+  const res = await authFetch("/api/mobile/chat/regenerate", token, {
+    method: "POST",
+    body: JSON.stringify({ sessionId, ...tools }),
+  })
+  return res.json()
+}
+
+/** Delete messages — DELETE /api/dashboard/chat/sessions/:id/messages. */
+export async function deleteChatMessages(
+  token: string,
+  sessionId: string,
+  messageIds: string[],
+): Promise<void> {
+  await authFetch(`/api/dashboard/chat/sessions/${sessionId}/messages`, token, {
+    method: "DELETE",
+    body: JSON.stringify({ messageIds }),
+  })
+}
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant"
   content: string
 }
 
 /**
- * Panggil endpoint OpenAI-compatible di backend.
- * Autentikasi memakai Bearer API key (buat di dashboard: Agent API Keys).
+ * Call the OpenAI-compatible endpoint on the backend.
+ * Authenticates with a Bearer API key (create one in the dashboard: Agent API Keys).
  */
 export async function chatCompletion(params: {
   apiKey: string

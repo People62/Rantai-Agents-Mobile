@@ -1,5 +1,5 @@
 /**
- * Hook tema: mengembalikan palet warna sesuai light/dark mode sistem.
+ * Theme hook: returns the color palette matching the system light/dark mode.
  */
 
 import { Colors } from '@/constants/theme';

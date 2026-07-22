@@ -1,22 +1,37 @@
 /**
- * Tipe rute navigasi (React Navigation).
+ * Navigation route types (React Navigation).
  */
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
+import type { ComposerOptions } from '@/components/chat/composer';
+
 export type ChatStackParamList = {
   ChatList: undefined;
-  ChatThread: { id: string; title: string };
+  ChatThread: {
+    id: string;
+    title: string;
+    /** First message from Home; auto-sent once when the thread opens. */
+    initialMessage?: string;
+    /** Tool selections from the Home composer, used for that first message. */
+    initialOptions?: ComposerOptions;
+  };
 };
 
-export type TabParamList = {
+export type DrawerParamList = {
+  Home: undefined;
+  NewChat: undefined;
   ChatTab: NavigatorScreenParams<ChatStackParamList>;
+  Search: undefined;
+  AgentBuilder: undefined;
+  Workflows: undefined;
+  MediaStudio: undefined;
+  Files: undefined;
   Marketplace: undefined;
-  Agents: undefined;
-  Knowledge: undefined;
-  More: undefined;
+  DigitalEmployees: undefined;
+  Settings: undefined;
 };
 
 export type RootStackParamList = {
   Login: undefined;
-  Main: NavigatorScreenParams<TabParamList>;
+  Main: NavigatorScreenParams<DrawerParamList>;
 };

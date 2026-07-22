@@ -1,11 +1,11 @@
 /**
- * Login — UI sign-in (dummy, tanpa backend). Aksen biru brand.
+ * Login — sign-in UI (dummy, without backend). Brand blue accent.
  */
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, Input, Screen } from '@/components/ui';
-import { Spacing } from '@/constants/theme';
+import { Button, Input, Logo, Screen } from '@/components/ui';
+import { FontSize, FontWeight, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
 
@@ -14,14 +14,26 @@ export function LoginScreen() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    setError(null);
+    setLoading(true);
+    try {
+      await signIn(email.trim(), password);
+    } catch {
+      setError('Incorrect email or password, or the backend is unreachable.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <Screen>
       <View style={styles.container}>
         <View style={styles.header}>
-          <View style={[styles.logo, { backgroundColor: theme.accent }]}>
-            <Text style={styles.logoText}>R</Text>
-          </View>
+          <Logo width={110} />
           <Text style={[styles.title, { color: theme.text }]}>Welcome back</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             Please log in to continue.
@@ -33,21 +45,21 @@ export function LoginScreen() {
             label="Email"
             value={email}
             onChangeText={setEmail}
-            placeholder="nama@perusahaan.com"
+            placeholder="name@company.com"
             keyboardType="email-address"
             autoCapitalize="none"
           />
           <Input
-            label="Kata sandi"
+            label="Password"
             value={password}
             onChangeText={setPassword}
             placeholder="••••••••"
             secureTextEntry
           />
-          <Button label="Masuk" onPress={signIn} style={styles.submit} />
-          {/* <Text style={[styles.hint, { color: theme.textSecondary }]}>
-            Mode desain — ketuk "Masuk" untuk melihat aplikasi.
-          </Text> */}
+          {error ? (
+            <Text style={[styles.error, { color: theme.destructive }]}>{error}</Text>
+          ) : null}
+          <Button label="Log in" onPress={submit} loading={loading} style={styles.submit} />
         </View>
       </View>
     </Screen>
@@ -56,19 +68,11 @@ export function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', gap: Spacing.five },
-  header: { alignItems: 'center', gap: Spacing.two },
-  logo: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
-  },
-  logoText: { color: '#fff', fontSize: 28, fontWeight: '700' },
-  title: { fontSize: 26, fontWeight: '700' },
-  subtitle: { fontSize: 15 },
+  header: { alignItems: 'center', gap: Spacing.three },
+  title: { fontSize: FontSize.title2, fontWeight: FontWeight.bold },
+  subtitle: { fontSize: FontSize.md },
   form: { gap: Spacing.three },
   submit: { marginTop: Spacing.two },
-  hint: { fontSize: 12, textAlign: 'center' },
+  error: { fontSize: FontSize.sm, textAlign: 'center' },
+  hint: { fontSize: FontSize.xs, textAlign: 'center' },
 });

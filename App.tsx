@@ -5,6 +5,7 @@
  * - AuthProvider (UI-only) → RootNavigator (Login / Main tabs)
  * - Tema light/dark mengikuti sistem, memakai token dari src/constants/theme.ts
  */
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import {
   DarkTheme,
   DefaultTheme,
@@ -44,7 +45,9 @@ export default function App() {
             },
           }}>
           <AuthProvider>
-            <RootNavigator />
+            <BottomSheetModalProvider>
+              <RootNavigator />
+            </BottomSheetModalProvider>
           </AuthProvider>
         </NavigationContainer>
       </SafeAreaProvider>

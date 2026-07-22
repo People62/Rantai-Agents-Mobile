@@ -1,10 +1,10 @@
 /**
- * Knowledge — daftar file basis pengetahuan (RAG). Data dummy.
+ * Knowledge — list of knowledge base files (RAG). Dummy data.
  */
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Badge, Card, Screen } from '@/components/ui';
-import { Radius, Spacing } from '@/constants/theme';
+import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { knowledgeFiles } from '@/data/mock';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -12,10 +12,7 @@ export function KnowledgeScreen() {
   const theme = useTheme();
 
   return (
-    <Screen padded={false} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Knowledge</Text>
-      </View>
+    <Screen padded={false} edges={['bottom']}>
       <FlatList
         data={knowledgeFiles}
         keyExtractor={(f) => f.id}
@@ -25,7 +22,7 @@ export function KnowledgeScreen() {
           <Card>
             <View style={styles.row}>
               <View style={[styles.icon, { backgroundColor: theme.backgroundElement }]}>
-                <Text style={{ color: theme.textSecondary, fontWeight: '700', fontSize: 12 }}>
+                <Text style={{ color: theme.textSecondary, fontWeight: FontWeight.bold, fontSize: FontSize.xs }}>
                   {item.type}
                 </Text>
               </View>
@@ -35,7 +32,7 @@ export function KnowledgeScreen() {
                 </Text>
                 <Text style={[styles.size, { color: theme.textSecondary }]}>{item.size}</Text>
               </View>
-              <Badge label="Terindeks" variant="secondary" />
+              <Badge label="Indexed" variant="secondary" />
             </View>
           </Card>
         )}
@@ -45,12 +42,10 @@ export function KnowledgeScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.three },
-  title: { fontSize: 28, fontWeight: '700' },
-  list: { paddingHorizontal: Spacing.four },
+  list: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   icon: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, gap: 2 },
-  name: { fontSize: 15, fontWeight: '600' },
-  size: { fontSize: 12 },
+  name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  size: { fontSize: FontSize.xs },
 });

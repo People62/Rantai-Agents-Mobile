@@ -1,5 +1,5 @@
 /**
- * Input — text field bertema dengan label & fokus aksen biru (shadcn input).
+ * Input — themed text field with a label & blue accent focus (shadcn input).
  */
 import { forwardRef, useState } from 'react';
 import {
@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { Radius, Spacing } from '@/constants/theme';
+import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type InputProps = TextInputProps & {
@@ -57,12 +57,12 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
 
 const styles = StyleSheet.create({
   wrap: { gap: Spacing.two },
-  label: { fontSize: 13, fontWeight: '600' },
+  label: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
   input: {
     height: 44,
     borderRadius: Radius.md,
     borderWidth: StyleSheet.hairlineWidth * 2,
     paddingHorizontal: Spacing.three,
-    fontSize: 15,
+    fontSize: FontSize.md,
   },
 });
