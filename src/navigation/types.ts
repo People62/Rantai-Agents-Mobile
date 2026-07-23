@@ -19,8 +19,13 @@ export type ChatStackParamList = {
 
 export type AgentStackParamList = {
   AgentList: undefined;
-  /** Agent editor — `id` present = edit an existing agent, absent = create. */
-  AgentEditor: { id?: string } | undefined;
+  /**
+   * Agent config — `id` present = edit an existing agent. `template` pre-fills
+   * a new (unsaved) agent from a starter template. Both absent = blank new agent.
+   */
+  AgentEditor:
+    | { id?: string; template?: import('@/lib/api').AgentInput }
+    | undefined;
 };
 
 export type WorkflowStackParamList = {

@@ -14,6 +14,7 @@ import {
   Modal,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -29,6 +30,7 @@ import {
   getAgents,
   setDefaultAgent,
 } from '@/lib/api';
+import { AGENT_TEMPLATES, templateToInput } from '@/lib/agent-templates';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
 import type { AgentStackParamList } from '@/navigation/types';
@@ -190,6 +192,53 @@ export function AgentListScreen({ navigation }: Props) {
         contentContainerStyle={filtered.length ? styles.list : styles.emptyWrap}
         refreshControl={
           <RefreshControl refreshing={false} onRefresh={load} tintColor={theme.accent} />
+        }
+        ListHeaderComponent={
+          query ? null : (
+            <View style={styles.galleryWrap}>
+              <Text style={[styles.galleryTitle, { color: theme.textSecondary }]}>
+                Start from a template
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.gallery}>
+                {AGENT_TEMPLATES.map((t) => (
+                  <Pressable
+                    key={t.id}
+                    onPress={() =>
+                      navigation.navigate('AgentEditor', { template: templateToInput(t) })
+                    }
+                    style={({ pressed }) => [
+                      styles.tplCard,
+                      { backgroundColor: theme.card, borderColor: theme.border },
+                      pressed && { backgroundColor: theme.backgroundElement },
+                    ]}>
+                    <Text style={styles.tplEmoji}>{t.emoji}</Text>
+                    <Text style={[styles.tplName, { color: theme.text }]} numberOfLines={1}>
+                      {t.name}
+                    </Text>
+                    <Text
+                      style={[styles.tplDesc, { color: theme.textSecondary }]}
+                      numberOfLines={3}>
+                      {t.description}
+                    </Text>
+                    <View style={styles.tplTags}>
+                      {t.tags.slice(0, 2).map((tag) => (
+                        <View
+                          key={tag}
+                          style={[styles.tplTag, { backgroundColor: theme.backgroundElement }]}>
+                          <Text style={[styles.tplTagText, { color: theme.textSecondary }]}>
+                            {tag}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )
         }
         ListEmptyComponent={
           <View style={styles.centered}>
@@ -368,6 +417,29 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
   list: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
+
+  // --- Template gallery ---
+  galleryWrap: { marginBottom: Spacing.three, marginHorizontal: -Spacing.four },
+  galleryTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    paddingHorizontal: Spacing.four,
+    marginBottom: Spacing.two,
+  },
+  gallery: { paddingHorizontal: Spacing.four, gap: Spacing.three },
+  tplCard: {
+    width: 200,
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    padding: Spacing.three,
+    gap: 6,
+  },
+  tplEmoji: { fontSize: 26 },
+  tplName: { fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  tplDesc: { fontSize: FontSize.sm, lineHeight: 18, minHeight: 54 },
+  tplTags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, marginTop: 2 },
+  tplTag: { paddingHorizontal: Spacing.two, paddingVertical: 2, borderRadius: Radius.full },
+  tplTagText: { fontSize: FontSize.xs, fontWeight: FontWeight.medium },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
