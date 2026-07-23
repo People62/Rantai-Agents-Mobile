@@ -10,7 +10,7 @@ import { Pressable } from 'react-native';
 
 import { FontFamily, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { AgentEditorScreen } from '@/screens/agents/agent-editor-screen';
+import { AgentConfigScreen } from '@/screens/agents/agent-config-screen';
 import { AgentListScreen } from '@/screens/agents/agent-list-screen';
 import type { AgentStackParamList, DrawerParamList } from './types';
 
@@ -52,13 +52,7 @@ export function AgentStack() {
           ),
         })}
       />
-      <Stack.Screen
-        name="AgentEditor"
-        component={AgentEditorScreen}
-        options={({ route }) => ({
-          title: route.params?.id ? 'Edit Agent' : 'New Agent',
-        })}
-      />
+      <Stack.Screen name="AgentEditor" component={AgentConfigScreen} />
     </Stack.Navigator>
   );
 }

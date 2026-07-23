@@ -318,6 +318,44 @@ export async function deleteChatMessages(
 // Agent Builder (assistants) — /api/mobile/assistants
 // ============================================================
 
+/** Model sampling / behaviour parameters (Assistant.modelConfig JSON). */
+export interface ModelConfig {
+  temperature?: number
+  topP?: number
+  maxTokens?: number
+  presencePenalty?: number
+  frequencyPenalty?: number
+  reasoningEffort?: "low" | "medium" | "high"
+  responseFormat?: "default" | "json" | "markdown" | "concise" | "detailed"
+}
+
+/** Long/short-term memory settings (Assistant.memoryConfig JSON). */
+export interface MemoryConfig {
+  enabled: boolean
+  workingMemory: boolean
+  semanticRecall: boolean
+  longTermProfile: boolean
+  memoryInstructions?: string
+}
+
+/** Safety / guard-rail settings (Assistant.guardRails JSON). */
+export interface GuardRailsConfig {
+  blockedTopics?: string[]
+  safetyInstructions?: string
+  maxResponseLength?: number
+  requireCitations?: boolean
+}
+
+/** Chat behaviour preferences (Assistant.chatConfig JSON). */
+export interface ChatConfig {
+  autoCreateTopic?: boolean
+  messageThreshold?: number
+  limitHistory?: boolean
+  historyCount?: number
+  autoSummary?: boolean
+  autoScroll?: boolean
+}
+
 /** An agent (assistant) as returned by the mobile API. */
 export interface Agent {
   id: string
@@ -333,15 +371,35 @@ export interface Agent {
   updatedAt: string
   /** Number of tools bound to the agent (list endpoint only). */
   toolCount?: number
+  // Rich configuration (present on the single-agent GET).
+  useKnowledgeBase?: boolean
+  knowledgeBaseGroupIds?: string[]
+  liveChatEnabled?: boolean
+  openingMessage?: string | null
+  openingQuestions?: string[]
+  modelConfig?: ModelConfig | null
+  memoryConfig?: MemoryConfig | null
+  guardRails?: GuardRailsConfig | null
+  chatConfig?: ChatConfig | null
 }
 
-/** Fields accepted when creating or editing an agent (MVP subset). */
+/** Fields accepted when creating or editing an agent. */
 export interface AgentInput {
   name: string
   systemPrompt: string
   description?: string | null
   emoji?: string
   model?: string
+  tags?: string[]
+  useKnowledgeBase?: boolean
+  knowledgeBaseGroupIds?: string[]
+  liveChatEnabled?: boolean
+  openingMessage?: string | null
+  openingQuestions?: string[]
+  modelConfig?: ModelConfig | null
+  memoryConfig?: MemoryConfig | null
+  guardRails?: GuardRailsConfig | null
+  chatConfig?: ChatConfig | null
 }
 
 /** A selectable model for the agent editor dropdown. */
@@ -414,6 +472,48 @@ export async function setDefaultAgent(token: string, id: string): Promise<void> 
 export async function getModels(token: string): Promise<AgentModel[]> {
   const res = await authFetch("/api/mobile/models", token)
   return res.json()
+}
+
+/** A bindable tool from the catalog — GET /api/mobile/tools. */
+export interface AgentTool {
+  id: string
+  name: string
+  displayName: string
+  description: string
+  category: string
+  icon: string | null
+  isBuiltIn: boolean
+}
+
+/** Catalog of tools that can be bound to an agent. */
+export async function getTools(token: string): Promise<AgentTool[]> {
+  const res = await authFetch("/api/mobile/tools", token)
+  return res.json()
+}
+
+/**
+ * IDs of tools currently bound to an agent —
+ * GET /api/mobile/assistants/:id/tools.
+ */
+export async function getAgentToolIds(token: string, id: string): Promise<string[]> {
+  const res = await authFetch(`/api/mobile/assistants/${id}/tools`, token)
+  const rows: { id: string; enabledForAssistant?: boolean }[] = await res.json()
+  return rows.filter((r) => r.enabledForAssistant !== false).map((r) => r.id)
+}
+
+/**
+ * Replace an agent's tool bindings —
+ * PUT /api/mobile/assistants/:id/tools.
+ */
+export async function setAgentTools(
+  token: string,
+  id: string,
+  toolIds: string[],
+): Promise<void> {
+  await authFetch(`/api/mobile/assistants/${id}/tools`, token, {
+    method: "PUT",
+    body: JSON.stringify({ toolIds }),
+  })
 }
 
 export interface ChatMessage {
