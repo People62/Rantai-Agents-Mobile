@@ -814,6 +814,19 @@ export async function createKnowledgeGroup(
   return res.json()
 }
 
+/** Update a knowledge base — PUT /api/mobile/knowledge/groups/:id. */
+export async function updateKnowledgeGroup(
+  token: string,
+  id: string,
+  input: { name?: string; description?: string; color?: string },
+): Promise<KnowledgeGroup> {
+  const res = await authFetch(`/api/mobile/knowledge/groups/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
 /** Delete a knowledge base (documents kept) — DELETE /api/mobile/knowledge/groups/:id. */
 export async function deleteKnowledgeGroup(token: string, id: string): Promise<void> {
   await authFetch(`/api/mobile/knowledge/groups/${id}`, token, { method: "DELETE" })

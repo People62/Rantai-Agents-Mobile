@@ -1,10 +1,11 @@
 /**
  * FilesHome — knowledge bases (groups) plus an "All Documents" entry. Tap to
- * browse documents; create or delete a KB.
+ * browse documents; long-press a KB for actions (Rename / Delete). Create a KB
+ * with the + button.
  */
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ChevronRight, FolderPlus, Layers } from 'lucide-react-native';
+import { ChevronRight, FolderPlus, Layers, Pencil, Trash2 } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -26,6 +27,7 @@ import {
   createKnowledgeGroup,
   deleteKnowledgeGroup,
   getKnowledgeGroups,
+  updateKnowledgeGroup,
 } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
@@ -42,10 +44,20 @@ export function FilesHomeScreen({ navigation }: Props) {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState('');
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [busy, setBusy] = useState(false);
+
+  // Long-press actions
+  const [selected, setSelected] = useState<KnowledgeGroup | null>(null);
+  const [renaming, setRenaming] = useState<KnowledgeGroup | null>(null);
+  const [renameName, setRenameName] = useState('');
+  const [renameColor, setRenameColor] = useState(PRESET_COLORS[0]);
+  const [deleting, setDeleting] = useState<KnowledgeGroup | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -84,23 +96,49 @@ export function FilesHomeScreen({ navigation }: Props) {
     }
   }
 
-  function confirmDelete(g: KnowledgeGroup) {
-    Alert.alert('Delete knowledge base?', `"${g.name}" will be removed. Its documents are kept.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          if (!token) return;
-          try {
-            await deleteKnowledgeGroup(token, g.id);
-            setGroups((prev) => prev.filter((x) => x.id !== g.id));
-          } catch {
-            Alert.alert('Failed', 'Could not delete the knowledge base.');
-          }
-        },
-      },
-    ]);
+  function openRename() {
+    if (!selected) return;
+    setRenaming(selected);
+    setRenameName(selected.name);
+    setRenameColor(selected.color || PRESET_COLORS[0]);
+    setSelected(null);
+  }
+
+  async function submitRename() {
+    const n = renameName.trim();
+    if (!token || !renaming || !n || actionBusy) return;
+    setActionBusy(true);
+    try {
+      await updateKnowledgeGroup(token, renaming.id, { name: n, color: renameColor });
+      setGroups((prev) => prev.map((g) => (g.id === renaming.id ? { ...g, name: n, color: renameColor } : g)));
+      setRenaming(null);
+    } catch {
+      Alert.alert('Failed', 'Could not rename the knowledge base.');
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  function askDelete() {
+    if (!selected) return;
+    setDeleting(selected);
+    setDeleteError(null);
+    setSelected(null);
+  }
+
+  async function doDelete() {
+    if (!token || !deleting || actionBusy) return;
+    setActionBusy(true);
+    setDeleteError(null);
+    try {
+      await deleteKnowledgeGroup(token, deleting.id);
+      setGroups((prev) => prev.filter((x) => x.id !== deleting.id));
+      setDeleting(null);
+    } catch {
+      setDeleteError('Failed to delete. Try again.');
+    } finally {
+      setActionBusy(false);
+    }
   }
 
   if (loading) {
@@ -164,7 +202,7 @@ export function FilesHomeScreen({ navigation }: Props) {
         renderItem={({ item }) => (
           <Pressable
             onPress={() => navigation.navigate('KnowledgeDocs', { groupId: item.id, groupName: item.name })}
-            onLongPress={() => confirmDelete(item)}
+            onLongPress={() => setSelected(item)}
             delayLongPress={300}
             style={({ pressed }) => [
               styles.row,
@@ -194,6 +232,78 @@ export function FilesHomeScreen({ navigation }: Props) {
         <FolderPlus color={theme.accentForeground} size={24} />
       </Pressable>
 
+      {/* Action sheet (long-press) */}
+      <Modal visible={!!selected} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
+        <Pressable style={styles.backdrop} onPress={() => setSelected(null)}>
+          <Pressable style={[styles.sheetMenu, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <View style={styles.menuHead}>
+              <View style={[styles.dot, { backgroundColor: selected?.color || theme.accent, marginHorizontal: 0 }]} />
+              <Text style={[styles.menuTitle, { color: theme.text }]} numberOfLines={1}>{selected?.name}</Text>
+            </View>
+            <Pressable onPress={openRename} style={({ pressed }) => [styles.menuItem, pressed && { backgroundColor: theme.backgroundElement }]}>
+              <Pencil color={theme.text} size={20} />
+              <Text style={[styles.menuLabel, { color: theme.text }]}>Rename</Text>
+            </Pressable>
+            <Pressable onPress={askDelete} style={({ pressed }) => [styles.menuItem, pressed && { backgroundColor: theme.backgroundElement }]}>
+              <Trash2 color={theme.destructive} size={20} />
+              <Text style={[styles.menuLabel, { color: theme.destructive }]}>Delete</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Rename dialog */}
+      <Modal visible={!!renaming} transparent animationType="fade" onRequestClose={() => setRenaming(null)}>
+        <Pressable style={styles.backdrop} onPress={() => setRenaming(null)}>
+          <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.dialogTitle, { color: theme.text }]}>Rename knowledge base</Text>
+            <TextInput
+              value={renameName}
+              onChangeText={setRenameName}
+              autoFocus
+              placeholder="Name"
+              placeholderTextColor={theme.textSecondary}
+              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+            />
+            <Text style={[styles.colorLabel, { color: theme.textSecondary }]}>Color</Text>
+            <View style={styles.swatches}>
+              {PRESET_COLORS.map((c) => (
+                <Pressable
+                  key={c}
+                  onPress={() => setRenameColor(c)}
+                  style={[styles.swatch, { backgroundColor: c, borderColor: renameColor === c ? theme.text : 'transparent' }]}
+                />
+              ))}
+            </View>
+            <View style={styles.dialogActions}>
+              <Button label="Cancel" variant="outline" onPress={() => setRenaming(null)} style={styles.flex} />
+              <Button label="Save" onPress={submitRename} loading={actionBusy} disabled={!renameName.trim()} style={styles.flex} />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Delete confirmation (themed) */}
+      <Modal visible={!!deleting} transparent animationType="fade" onRequestClose={() => (actionBusy ? undefined : setDeleting(null))}>
+        <Pressable style={styles.backdrop} onPress={() => (actionBusy ? undefined : setDeleting(null))}>
+          <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border, alignItems: 'center' }]}>
+            <View style={[styles.dangerIcon, { backgroundColor: `${theme.destructive}1A` }]}>
+              <Trash2 color={theme.destructive} size={26} />
+            </View>
+            <Text style={[styles.dialogTitle, styles.textCenter, { color: theme.text }]}>Delete knowledge base?</Text>
+            <Text style={[styles.dialogMessage, { color: theme.textSecondary }]}>
+              <Text style={{ color: theme.text, fontWeight: FontWeight.semibold }}>{deleting?.name}</Text>
+              {' will be removed. Its documents are kept (just unassigned).'}
+            </Text>
+            {deleteError ? <Text style={[styles.dialogError, { color: theme.destructive }]}>{deleteError}</Text> : null}
+            <View style={[styles.dialogActions, styles.selfStretch]}>
+              <Button label="Cancel" variant="outline" onPress={() => setDeleting(null)} disabled={actionBusy} style={styles.flex} />
+              <Button label="Delete" variant="destructive" onPress={doDelete} loading={actionBusy} style={styles.flex} />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Create KB dialog */}
       <Modal visible={createOpen} transparent animationType="fade" onRequestClose={() => setCreateOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setCreateOpen(false)}>
@@ -213,10 +323,7 @@ export function FilesHomeScreen({ navigation }: Props) {
                 <Pressable
                   key={c}
                   onPress={() => setColor(c)}
-                  style={[
-                    styles.swatch,
-                    { backgroundColor: c, borderColor: color === c ? theme.text : 'transparent' },
-                  ]}
+                  style={[styles.swatch, { backgroundColor: c, borderColor: color === c ? theme.text : 'transparent' }]}
                 />
               ))}
             </View>
@@ -266,6 +373,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
   },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+
+  // action sheet
+  sheetMenu: { width: '100%', maxWidth: 360, borderRadius: Radius.xl, borderWidth: StyleSheet.hairlineWidth * 2, paddingVertical: Spacing.two },
+  menuHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two },
+  menuTitle: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, flex: 1 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.four, paddingVertical: Spacing.three },
+  menuLabel: { fontSize: FontSize.md, fontWeight: FontWeight.medium },
+
   dialog: {
     width: '100%',
     maxWidth: 360,
@@ -286,4 +401,11 @@ const styles = StyleSheet.create({
   colorLabel: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
   swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   swatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
+
+  // themed delete
+  textCenter: { textAlign: 'center' },
+  dangerIcon: { width: 56, height: 56, borderRadius: Radius.full, alignItems: 'center', justifyContent: 'center' },
+  dialogMessage: { fontSize: FontSize.base, textAlign: 'center', lineHeight: 20 },
+  dialogError: { fontSize: FontSize.sm, textAlign: 'center' },
+  selfStretch: { alignSelf: 'stretch' },
 });
