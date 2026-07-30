@@ -30,6 +30,7 @@ import { AgentStack } from './agent-stack';
 import { ChatStack } from './chat-stack';
 import { FilesStack } from './files-stack';
 import { MediaStack } from './media-stack';
+import { SettingsStack } from './settings-stack';
 import { WorkflowStack } from './workflow-stack';
 import type { DrawerParamList } from './types';
 
@@ -39,7 +40,6 @@ const SearchScreen = makePlaceholder('Search', 'Search conversations, agents, an
 const AgentBuilderScreen = makePlaceholder('Agent Builder', 'Configure your AI assistants.', Bot);
 const WorkflowsScreen = makePlaceholder('Workflows', 'Build agent automations & pipelines.', Workflow);
 const MediaStudioScreen = makePlaceholder('Media Studio', 'Generate images, audio, and video.', Clapperboard);
-const SettingsScreen = makePlaceholder('Settings', 'General, credentials, MCP, and more.', Settings);
 
 export function AppDrawer() {
   const theme = useTheme();
@@ -157,6 +157,25 @@ export function AppDrawer() {
             navigation.navigate('Files', { screen: 'FilesHome' });
           },
         })}
+      />
+      <Drawer.Screen
+        name="Marketplace"
+        component={MarketplaceScreen}
+        options={{
+          title: 'Marketplace',
+          drawerIcon: ({ color }) => <ShoppingCart color={color} size={FontSize.xxl} />,
+        }}
+      />
+      <Drawer.Screen
+        name="Settings"
+        component={SettingsStack}
+        options={{
+          title: 'Settings',
+          headerShown: false,
+          // Reached via the profile footer in DrawerContent, not the menu list.
+          drawerItemStyle: { display: 'none' },
+          drawerIcon: ({ color }) => <Settings color={color} size={FontSize.xxl} />,
+        }}
       />
       {/*
       <Drawer.Screen

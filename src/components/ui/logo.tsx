@@ -5,8 +5,9 @@
  * to contrast with the background, while the blue accent stays fixed. Original
  * ratio 130:100.
  */
-import { useColorScheme } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+
+import { useScheme } from '@/hooks/use-theme';
 
 const ACCENT = '#5CB6F9';
 
@@ -21,7 +22,7 @@ const buildXml = (mono: string) => `
 </svg>`;
 
 export function Logo({ width = 96 }: { width?: number }) {
-  const scheme = useColorScheme();
+  const scheme = useScheme();
   const mono = scheme === 'dark' ? '#FFFFFF' : '#050A30';
   return <SvgXml xml={buildXml(mono)} width={width} height={(width * 100) / 130} />;
 }
