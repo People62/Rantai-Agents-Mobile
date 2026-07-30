@@ -9,14 +9,17 @@ import { DrawerScreenProps } from '@react-navigation/drawer';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect } from '@react-navigation/native';
 import { Check, ChevronDown } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   FlatList,
   KeyboardAvoidingView,
   Modal,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -61,9 +64,52 @@ function pickInitialAgent(agents: Agent[], defaultId: string | null): Agent | nu
 export function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const headerHeight = useHeaderHeight();
+  const { height: winHeight } = useWindowDimensions();
   const { token, user } = useAuth();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // --- Intro animation (logo rises from screen centre, matching the splash) ---
+  const logoRef = useRef<View>(null);
+  const started = useRef(false);
+  const logoTranslate = useRef(new Animated.Value(0)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const contentFade = useRef(new Animated.Value(0)).current;
+
+  const runIntro = () => {
+    if (started.current) return;
+    logoRef.current?.measureInWindow((_x, y, _w, h) => {
+      if (!h) return;
+      started.current = true;
+      const restCentre = y + h / 2;
+      const offset = winHeight / 2 - restCentre;
+      logoTranslate.setValue(offset);
+      logoOpacity.setValue(1);
+      Animated.sequence([
+        Animated.timing(logoTranslate, {
+          toValue: 0,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(contentFade, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  };
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!started.current) {
+        logoOpacity.setValue(1);
+        contentFade.setValue(1);
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [logoOpacity, contentFade]);
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -97,6 +143,7 @@ export function HomeScreen({ navigation }: Props) {
 
   const name = user?.name || user?.email || 'User';
   const greeting = greetingFor(new Date().getHours());
+  const contentRise = contentFade.interpolate({ inputRange: [0, 1], outputRange: [10, 0] });
 
   /** Create the session then open the thread; the first message is sent there. */
   async function startChat(content: string, options: ComposerOptions) {
@@ -129,34 +176,45 @@ export function HomeScreen({ navigation }: Props) {
         behavior="padding"
         keyboardVerticalOffset={headerHeight}>
         <View style={styles.center}>
-          <Logo width={132} />
-          <Text style={[styles.greeting, { color: theme.text }]}>
-            {greeting}, {name}
-          </Text>
-        </View>
-
-        <View style={styles.agentBar}>
-          <Pressable
-            onPress={() => setPickerOpen(true)}
-            disabled={!agents.length}
+          <View ref={logoRef} onLayout={runIntro}>
+            <Animated.View
+              style={{ opacity: logoOpacity, transform: [{ translateY: logoTranslate }] }}>
+              <Logo width={132} />
+            </Animated.View>
+          </View>
+          <Animated.Text
             style={[
-              styles.chip,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              styles.greeting,
+              { color: theme.text, opacity: contentFade, transform: [{ translateY: contentRise }] },
             ]}>
-            <Text style={styles.chipEmoji}>{agent?.emoji ?? '🤖'}</Text>
-            <Text style={[styles.chipText, { color: theme.text }]} numberOfLines={1}>
-              {agent?.name ?? 'Just Chat'}
-            </Text>
-            <ChevronDown color={theme.textSecondary} size={16} />
-          </Pressable>
+            {greeting}, {name}
+          </Animated.Text>
         </View>
 
-        <Composer
-          placeholder="Ask something to get started…"
-          sending={creating}
-          error={error}
-          onSend={startChat}
-        />
+        <Animated.View style={{ opacity: contentFade }}>
+          <View style={styles.agentBar}>
+            <Pressable
+              onPress={() => setPickerOpen(true)}
+              disabled={!agents.length}
+              style={[
+                styles.chip,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              ]}>
+              <Text style={styles.chipEmoji}>{agent?.emoji ?? '🤖'}</Text>
+              <Text style={[styles.chipText, { color: theme.text }]} numberOfLines={1}>
+                {agent?.name ?? 'Just Chat'}
+              </Text>
+              <ChevronDown color={theme.textSecondary} size={16} />
+            </Pressable>
+          </View>
+
+          <Composer
+            placeholder="Ask something to get started…"
+            sending={creating}
+            error={error}
+            onSend={startChat}
+          />
+        </Animated.View>
       </KeyboardAvoidingView>
 
       {/* Agent picker */}
