@@ -7,7 +7,7 @@
 import { pick, types } from '@react-native-documents/picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { FileText, FileUp, Pencil, Plus, Search, Trash2 } from 'lucide-react-native';
+import { Check, ChevronDown, FileText, FileUp, Pencil, Plus, Search, Trash2 } from 'lucide-react-native';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -77,6 +77,7 @@ export function DocumentsScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState<string | null>(null);
+  const [catPickerOpen, setCatPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   // Upload dialog state
@@ -276,27 +277,36 @@ export function DocumentsScreen({ route, navigation }: Props) {
   return (
     <Screen padded={false} edges={['bottom']}>
       <View style={styles.filters}>
-        <View style={[styles.searchBar, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-          <Search color={theme.textSecondary} size={18} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search documents…"
-            placeholderTextColor={theme.textSecondary}
-            style={[styles.searchInput, { color: theme.text }]}
-            autoCapitalize="none"
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
+        <View style={styles.searchRow}>
+          <View style={[styles.searchBar, styles.flex, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <Search color={theme.textSecondary} size={18} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search documents…"
+              placeholderTextColor={theme.textSecondary}
+              style={[styles.searchInput, { color: theme.text }]}
+              autoCapitalize="none"
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+            />
+          </View>
+          {categories.length ? (
+            <Pressable
+              onPress={() => setCatPickerOpen(true)}
+              style={[
+                styles.filterBtn,
+                { backgroundColor: theme.backgroundElement, borderColor: cat ? theme.accent : theme.border },
+              ]}>
+              <Text
+                style={[styles.filterText, { color: cat ? theme.accent : theme.text }]}
+                numberOfLines={1}>
+                {cat ? categories.find((c) => c.name === cat)?.label || cat : 'Category'}
+              </Text>
+              <ChevronDown color={cat ? theme.accent : theme.textSecondary} size={16} />
+            </Pressable>
+          ) : null}
         </View>
-        {categories.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-            <Chip label="All" active={!cat} onPress={() => setCat(null)} theme={theme} />
-            {categories.map((c) => (
-              <Chip key={c.id} label={c.label || c.name} active={cat === c.name} onPress={() => setCat(cat === c.name ? null : c.name)} theme={theme} />
-            ))}
-          </ScrollView>
-        ) : null}
       </View>
 
       <FlatList
@@ -337,6 +347,38 @@ export function DocumentsScreen({ route, navigation }: Props) {
           </Pressable>
         )}
       />
+
+      {/* Category filter picker */}
+      <Modal visible={catPickerOpen} transparent animationType="slide" onRequestClose={() => setCatPickerOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setCatPickerOpen(false)}>
+          <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.sheetTitle, { color: theme.text }]}>Filter by category</Text>
+            <ScrollView style={styles.catList} keyboardShouldPersistTaps="handled">
+              <CatRow
+                label="All categories"
+                active={!cat}
+                onPress={() => {
+                  setCat(null);
+                  setCatPickerOpen(false);
+                }}
+                theme={theme}
+              />
+              {categories.map((c) => (
+                <CatRow
+                  key={c.id}
+                  label={c.label || c.name}
+                  active={cat === c.name}
+                  onPress={() => {
+                    setCat(c.name);
+                    setCatPickerOpen(false);
+                  }}
+                  theme={theme}
+                />
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Action sheet (long-press) */}
       <Modal visible={!!selected} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
@@ -538,12 +580,20 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Chip({ label, active, onPress, theme }: { label: string; active: boolean; onPress: () => void; theme: ReturnType<typeof useTheme> }) {
+function CatRow({ label, active, onPress, theme }: { label: string; active: boolean; onPress: () => void; theme: ReturnType<typeof useTheme> }) {
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.chip, { backgroundColor: active ? theme.accent : theme.backgroundElement, borderColor: active ? theme.accent : theme.border }]}>
-      <Text style={[styles.chipText, { color: active ? theme.accentForeground : theme.textSecondary }]}>{label}</Text>
+      style={({ pressed }) => [styles.catRow, pressed && { backgroundColor: theme.backgroundElement }]}>
+      <Text
+        style={[
+          styles.catRowText,
+          { color: active ? theme.accent : theme.text, fontWeight: active ? FontWeight.semibold : FontWeight.regular },
+        ]}
+        numberOfLines={1}>
+        {label}
+      </Text>
+      {active ? <Check color={theme.accent} size={18} /> : null}
     </Pressable>
   );
 }
@@ -570,6 +620,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three, borderRadius: Radius.full, borderWidth: StyleSheet.hairlineWidth * 2,
   },
   searchInput: { flex: 1, fontSize: FontSize.md, padding: 0 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  filterBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, height: 44,
+    paddingHorizontal: Spacing.three, borderRadius: Radius.full,
+    borderWidth: StyleSheet.hairlineWidth * 2, maxWidth: 150,
+  },
+  filterText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, flexShrink: 1 },
+  catList: { flexGrow: 0, maxHeight: 320, paddingHorizontal: Spacing.four },
+  catRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    gap: Spacing.two, paddingVertical: Spacing.three, paddingHorizontal: Spacing.two, borderRadius: Radius.md,
+  },
+  catRowText: { fontSize: FontSize.md, flexShrink: 1 },
   chips: { gap: Spacing.two, paddingRight: Spacing.four },
   chip: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 2, borderRadius: Radius.full, borderWidth: StyleSheet.hairlineWidth * 2 },
   chipText: { fontSize: FontSize.sm, fontWeight: FontWeight.medium },
