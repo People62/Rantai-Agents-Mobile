@@ -56,12 +56,16 @@ import {
   KnowledgeGroup,
   MemoryConfig,
   ModelConfig,
+  Skill,
   createAgent,
   getAgent,
+  getAgentSkillIds,
   getAgentToolIds,
   getKnowledgeGroups,
   getModels,
+  getSkills,
   getTools,
+  setAgentSkills,
   setAgentTools,
   updateAgent,
 } from '@/lib/api';
@@ -93,7 +97,7 @@ const TABS: { id: TabId; label: string; icon: typeof Settings; editable: boolean
   { id: 'configure', label: 'Configure', icon: Settings, editable: true },
   { id: 'model', label: 'Model', icon: Cpu, editable: true },
   { id: 'tools', label: 'Tools', icon: Wrench, editable: true },
-  { id: 'skills', label: 'Skills', icon: Zap, editable: false },
+  { id: 'skills', label: 'Skills', icon: Zap, editable: true },
   { id: 'workflows', label: 'Workflows', icon: Share2, editable: false },
   { id: 'mcp', label: 'MCP', icon: Server, editable: false },
   { id: 'knowledge', label: 'Knowledge', icon: BookOpen, editable: true },
@@ -114,8 +118,6 @@ const RESPONSE_FORMATS: NonNullable<ModelConfig['responseFormat']>[] = [
 const REASONING: NonNullable<ModelConfig['reasoningEffort']>[] = ['low', 'medium', 'high'];
 
 const WEB_ONLY: Record<string, string> = {
-  skills:
-    'Attach reusable skills — bundles of tools and instructions the agent can invoke.',
   workflows: 'Let the agent trigger task workflows as part of a conversation.',
   mcp: 'Connect Model Context Protocol servers to extend the agent with external capabilities.',
   deploy: 'Publish the agent as a REST API, embeddable widget, or WebSocket endpoint.',
@@ -200,6 +202,12 @@ export function AgentConfigScreen({ route, navigation }: Props) {
   const [toolsReady, setToolsReady] = useState(false);
   const [toolQuery, setToolQuery] = useState('');
 
+  // --- Skills ---
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [skillIds, setSkillIds] = useState<string[]>([]);
+  const [skillsReady, setSkillsReady] = useState(false);
+  const [skillQuery, setSkillQuery] = useState('');
+
   const [models, setModels] = useState<AgentModel[]>([]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [promptPickerOpen, setPromptPickerOpen] = useState(false);
@@ -207,16 +215,21 @@ export function AgentConfigScreen({ route, navigation }: Props) {
   const load = useCallback(async () => {
     if (!token) return;
     try {
-      const [modelList, groupsRes, toolList] = await Promise.all([
+      const [modelList, groupsRes, toolList, skillList] = await Promise.all([
         getModels(token).catch(() => []),
         getKnowledgeGroups(token).catch(() => ({ groups: [], totalDocumentCount: 0 })),
         getTools(token).catch(() => null),
+        getSkills(token).catch(() => null),
       ]);
       setModels(modelList);
       setKbGroups(groupsRes.groups);
       if (toolList) {
         setTools(toolList);
         setToolsReady(true);
+      }
+      if (skillList) {
+        setSkills(skillList);
+        setSkillsReady(true);
       }
       if (isEditing && editingId) {
         const agent = await getAgent(token, editingId);
@@ -236,14 +249,18 @@ export function AgentConfigScreen({ route, navigation }: Props) {
         if (agent.memoryConfig) setMem((p) => ({ ...p, ...agent.memoryConfig }));
         if (agent.guardRails) setGr((p) => ({ ...p, ...agent.guardRails }));
         if (agent.chatConfig) setChat((p) => ({ ...p, ...agent.chatConfig }));
-        const boundIds = await getAgentToolIds(token, editingId).catch(() => null);
-        if (boundIds) {
+        const [boundToolIds, boundSkillIds] = await Promise.all([
+          getAgentToolIds(token, editingId).catch(() => null),
+          getAgentSkillIds(token, editingId).catch(() => null),
+        ]);
+        if (boundToolIds) {
           // Show only catalog (user-selectable) tools; hidden bindings (e.g. MCP)
           // are preserved server-side by setAssistantTools on save.
           setToolIds(
-            toolList ? boundIds.filter((id) => toolList.some((t) => t.id === id)) : boundIds,
+            toolList ? boundToolIds.filter((id) => toolList.some((t) => t.id === id)) : boundToolIds,
           );
         }
+        if (boundSkillIds) setSkillIds(boundSkillIds);
       }
     } catch {
       setError('Failed to load. Go back and try again.');
@@ -286,10 +303,13 @@ export function AgentConfigScreen({ route, navigation }: Props) {
         isEditing && editingId
           ? (await updateAgent(token, editingId, payload), editingId)
           : (await createAgent(token, payload)).id;
-      // Persist tool bindings only when the catalog loaded, so a failed fetch
-      // can't silently wipe existing bindings.
+      // Persist tool/skill bindings only when their catalog loaded, so a failed
+      // fetch can't silently wipe existing bindings.
       if (toolsReady) {
         await setAgentTools(token, agentId, toolIds);
+      }
+      if (skillsReady) {
+        await setAgentSkills(token, agentId, skillIds);
       }
       navigation.goBack();
     } catch {
@@ -299,7 +319,7 @@ export function AgentConfigScreen({ route, navigation }: Props) {
   }, [
     token, canSave, trimmedName, trimmedPrompt, description, emoji, tags, openingMessage,
     openingQuestions, liveChatEnabled, useKb, kbGroupIds, mc, mem, gr, chat, model,
-    isEditing, editingId, navigation, toolsReady, toolIds,
+    isEditing, editingId, navigation, toolsReady, toolIds, skillsReady, skillIds,
   ]);
 
   useLayoutEffect(() => {
@@ -340,6 +360,15 @@ export function AgentConfigScreen({ route, navigation }: Props) {
         t.category.toLowerCase().includes(q),
     );
   }, [tools, toolQuery]);
+  const filteredSkills = useMemo(() => {
+    const q = skillQuery.trim().toLowerCase();
+    if (!q) return skills;
+    return skills.filter(
+      (s) =>
+        s.displayName.toLowerCase().includes(q) ||
+        (s.description ?? '').toLowerCase().includes(q),
+    );
+  }, [skills, skillQuery]);
 
   if (loading) {
     return (
@@ -657,6 +686,83 @@ export function AgentConfigScreen({ route, navigation }: Props) {
                               onValueChange={(v) =>
                                 setToolIds((prev) =>
                                   v ? [...prev, t.id] : prev.filter((x) => x !== t.id),
+                                )
+                              }
+                              trackColor={{ true: theme.accent, false: theme.border }}
+                              thumbColor="#fff"
+                            />
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          ) : null}
+
+          {tab === 'skills' ? (
+            <View style={styles.section}>
+              {!skillsReady ? (
+                <Text style={[styles.hint, { color: theme.textSecondary }]}>
+                  Couldn’t load skills. Go back and open the agent again.
+                </Text>
+              ) : (
+                <>
+                  <Text style={[styles.hint, { color: theme.textSecondary }]}>
+                    {skillIds.length} selected · {skills.length} available
+                  </Text>
+                  <View style={[styles.searchBar, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                    <Search color={theme.textSecondary} size={16} />
+                    <TextInput
+                      value={skillQuery}
+                      onChangeText={setSkillQuery}
+                      placeholder="Search skills…"
+                      placeholderTextColor={theme.textSecondary}
+                      style={[styles.searchInput, { color: theme.text }]}
+                      autoCapitalize="none"
+                      clearButtonMode="while-editing"
+                    />
+                  </View>
+                  {filteredSkills.length === 0 ? (
+                    <Text style={[styles.hint, { color: theme.textSecondary }]}>
+                      {skills.length ? 'No skills match your search.' : 'No skills available.'}
+                    </Text>
+                  ) : (
+                    <View style={styles.toolList}>
+                      {filteredSkills.map((s) => {
+                        const on = skillIds.includes(s.id);
+                        return (
+                          <Pressable
+                            key={s.id}
+                            onPress={() =>
+                              setSkillIds((prev) =>
+                                on ? prev.filter((x) => x !== s.id) : [...prev, s.id],
+                              )
+                            }
+                            style={[styles.toolRow, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                            <View style={[styles.toolIcon, { backgroundColor: theme.backgroundElement }]}>
+                              {s.icon ? (
+                                <Text style={styles.skillIconText}>{s.icon}</Text>
+                              ) : (
+                                <Zap color={theme.textSecondary} size={16} />
+                              )}
+                            </View>
+                            <View style={styles.flex}>
+                              <Text style={[styles.toolName, { color: theme.text }]} numberOfLines={1}>
+                                {s.displayName}
+                              </Text>
+                              {s.description ? (
+                                <Text style={[styles.toolDesc, { color: theme.textSecondary }]} numberOfLines={2}>
+                                  {s.description}
+                                </Text>
+                              ) : null}
+                            </View>
+                            <Switch
+                              value={on}
+                              onValueChange={(v) =>
+                                setSkillIds((prev) =>
+                                  v ? [...prev, s.id] : prev.filter((x) => x !== s.id),
                                 )
                               }
                               trackColor={{ true: theme.accent, false: theme.border }}
@@ -1207,6 +1313,7 @@ const styles = StyleSheet.create({
   toolCat: { paddingHorizontal: Spacing.two, paddingVertical: 1, borderRadius: Radius.full },
   toolCatText: { fontSize: FontSize.xs, fontWeight: FontWeight.medium, textTransform: 'capitalize' },
   toolDesc: { fontSize: FontSize.sm, marginTop: 2, lineHeight: 18 },
+  skillIconText: { fontSize: 16 },
 
   webOnly: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.six },
   webOnlyIcon: { width: 64, height: 64, borderRadius: Radius.full, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.one },
