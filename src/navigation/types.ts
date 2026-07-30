@@ -48,6 +48,18 @@ export type FilesStackParamList = {
   KnowledgeDocDetail: { id: string; title: string };
 };
 
+export type SettingsStackParamList = {
+  SettingsHome: undefined;
+  Billing: undefined;
+  OrganizationSettings: undefined;
+  Tools: undefined;
+  Skills: undefined;
+  Credentials: undefined;
+  McpServers: undefined;
+  Memory: undefined;
+  ApiKeys: undefined;
+};
+
 export type DrawerParamList = {
   Home: undefined;
   NewChat: undefined;
@@ -59,7 +71,7 @@ export type DrawerParamList = {
   Files: NavigatorScreenParams<FilesStackParamList>;
   Marketplace: undefined;
   DigitalEmployees: undefined;
-  Settings: undefined;
+  Settings: NavigatorScreenParams<SettingsStackParamList>;
 };
 
 export type RootStackParamList = {
