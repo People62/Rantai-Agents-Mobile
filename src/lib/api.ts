@@ -474,7 +474,415 @@ export async function getModels(token: string): Promise<AgentModel[]> {
   return res.json()
 }
 
-/** A bindable tool from the catalog — GET /api/mobile/tools. */
+/** The caller's active organization + role (Settings). */
+export interface MobileOrganization {
+  id: string
+  name: string
+  slug: string
+  role: string | null
+}
+
+/**
+ * The user's active organization — GET /api/mobile/organization.
+ * Returns null when the user has no organization.
+ */
+export async function getOrganization(
+  token: string,
+): Promise<MobileOrganization | null> {
+  const res = await authFetch("/api/mobile/organization", token)
+  return res.json()
+}
+
+/** Rename the active org (owner/admin) — PATCH /api/mobile/organization. */
+export async function updateOrganization(
+  token: string,
+  input: { name?: string },
+): Promise<MobileOrganization> {
+  const res = await authFetch("/api/mobile/organization", token, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Assignable membership roles (owner is not assignable via invite/change). */
+export type MemberRole = "admin" | "member" | "viewer"
+
+/** A member of the org (Settings → Organization). */
+export interface OrganizationMember {
+  id: string
+  userId: string
+  email: string
+  name: string | null
+  role: string
+  invitedBy: string | null
+  invitedAt: string
+  acceptedAt: string | null
+  isPending: boolean
+}
+
+/** Members of the active org — GET /api/mobile/organization/members. */
+export async function getOrganizationMembers(
+  token: string,
+): Promise<OrganizationMember[]> {
+  const res = await authFetch("/api/mobile/organization/members", token)
+  return res.json()
+}
+
+/** Invite a member (owner/admin) — POST /api/mobile/organization/members. */
+export async function inviteOrganizationMember(
+  token: string,
+  input: { email: string; role?: MemberRole },
+): Promise<OrganizationMember> {
+  const res = await authFetch("/api/mobile/organization/members", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Change a member's role (owner only) — PATCH .../members/:id. */
+export async function updateMemberRole(
+  token: string,
+  memberId: string,
+  role: MemberRole,
+): Promise<OrganizationMember> {
+  const res = await authFetch(`/api/mobile/organization/members/${memberId}`, token, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  })
+  return res.json()
+}
+
+/** Remove a member (owner/admin) — DELETE .../members/:id. */
+export async function removeOrganizationMember(
+  token: string,
+  memberId: string,
+): Promise<void> {
+  await authFetch(`/api/mobile/organization/members/${memberId}`, token, {
+    method: "DELETE",
+  })
+}
+
+/** The active org's logo URL — GET /api/mobile/organization/logo. */
+export async function getOrganizationLogo(
+  token: string,
+): Promise<{ logoUrl: string | null }> {
+  const res = await authFetch("/api/mobile/organization/logo", token)
+  return res.json()
+}
+
+/**
+ * Upload the org logo (owner/admin) — POST /api/mobile/organization/logo.
+ * Raw multipart so React Native sets its own boundary.
+ */
+export async function uploadOrganizationLogo(
+  token: string,
+  file: { uri: string; name: string; type: string },
+): Promise<{ logoUrl: string; logoS3Key: string }> {
+  const form = new FormData()
+  form.append("file", { uri: file.uri, name: file.name, type: file.type } as never)
+  const res = await fetch(`${API_URL}/api/mobile/organization/logo`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  if (!res.ok) {
+    throw new ApiError(res.status, await res.text().catch(() => ""))
+  }
+  return res.json()
+}
+
+/** Remove the org logo (owner/admin) — DELETE /api/mobile/organization/logo. */
+export async function deleteOrganizationLogo(token: string): Promise<void> {
+  await authFetch("/api/mobile/organization/logo", token, { method: "DELETE" })
+}
+
+/** A beta feature flag (platform-admin only). */
+export interface FeatureFlag {
+  feature: string
+  enabled: boolean
+}
+
+/** Beta feature flags — GET /api/mobile/features (platform admin only). */
+export async function getFeatures(token: string): Promise<FeatureFlag[]> {
+  const res = await authFetch("/api/mobile/features", token)
+  return res.json()
+}
+
+/** Toggle a beta feature — PUT /api/mobile/features (platform admin only). */
+export async function updateFeature(
+  token: string,
+  feature: string,
+  enabled: boolean,
+): Promise<FeatureFlag> {
+  const res = await authFetch("/api/mobile/features", token, {
+    method: "PUT",
+    body: JSON.stringify({ feature, enabled }),
+  })
+  return res.json()
+}
+
+// ============================================================
+// Credentials — /api/mobile/credentials (secrets encrypted server-side)
+// ============================================================
+
+export type CredentialType = "api_key" | "bearer" | "basic_auth" | "oauth2"
+
+/** A stored credential — masked; secret `data` is never returned. */
+export interface Credential {
+  id: string
+  name: string
+  type: string
+  organizationId: string | null
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** List the org's credentials (masked) — GET /api/mobile/credentials. */
+export async function getCredentials(token: string): Promise<Credential[]> {
+  const res = await authFetch("/api/mobile/credentials", token)
+  return res.json()
+}
+
+/**
+ * Create a credential — POST /api/mobile/credentials. `data` is plaintext
+ * (encrypted server-side). Shape of `data` depends on `type`.
+ */
+export async function createCredential(
+  token: string,
+  input: { name: string; type: CredentialType; data: Record<string, string> },
+): Promise<Credential> {
+  const res = await authFetch("/api/mobile/credentials", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/**
+ * Update a credential — PUT /api/mobile/credentials/:id. Omit `data` to keep
+ * the existing secret.
+ */
+export async function updateCredential(
+  token: string,
+  id: string,
+  input: { name?: string; type?: CredentialType; data?: Record<string, string> },
+): Promise<Credential> {
+  const res = await authFetch(`/api/mobile/credentials/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Delete a credential — DELETE /api/mobile/credentials/:id. */
+export async function deleteCredential(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/credentials/${id}`, token, { method: "DELETE" })
+}
+
+// ============================================================
+// MCP servers — /api/mobile/mcp-servers (env/headers encrypted server-side)
+// ============================================================
+
+export type McpTransport = "sse" | "streamable-http"
+
+/** An MCP server config (masked; env/header values are never returned). */
+export interface McpServer {
+  id: string
+  name: string
+  description: string | null
+  icon: string | null
+  transport: string
+  url: string
+  isBuiltIn: boolean
+  docsUrl: string | null
+  enabled: boolean
+  configured: boolean
+  lastConnectedAt: string | null
+  lastError: string | null
+  toolCount: number
+  createdAt: string
+}
+
+/** Fields for creating/updating an MCP server. */
+export interface McpServerInput {
+  name?: string
+  description?: string | null
+  transport?: McpTransport
+  url?: string
+  env?: Record<string, string>
+  headers?: Record<string, string>
+  docsUrl?: string | null
+  enabled?: boolean
+}
+
+/** List the org's MCP servers — GET /api/mobile/mcp-servers. */
+export async function getMcpServers(token: string): Promise<McpServer[]> {
+  const res = await authFetch("/api/mobile/mcp-servers", token)
+  return res.json()
+}
+
+/** Create an MCP server — POST /api/mobile/mcp-servers. */
+export async function createMcpServer(
+  token: string,
+  input: McpServerInput,
+): Promise<McpServer> {
+  const res = await authFetch("/api/mobile/mcp-servers", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Update an MCP server — PUT /api/mobile/mcp-servers/:id. */
+export async function updateMcpServer(
+  token: string,
+  id: string,
+  input: McpServerInput,
+): Promise<McpServer> {
+  const res = await authFetch(`/api/mobile/mcp-servers/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Delete an MCP server — DELETE /api/mobile/mcp-servers/:id. */
+export async function deleteMcpServer(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/mcp-servers/${id}`, token, { method: "DELETE" })
+}
+
+/** Result of connecting to an MCP server and syncing its tools. */
+export interface McpDiscoverResult {
+  success: boolean
+  toolCount: number
+  tools: { id: string; name: string; displayName: string; description: string }[]
+}
+
+/** Discover + sync an MCP server's tools — POST .../mcp-servers/:id/discover. */
+export async function discoverMcpServer(
+  token: string,
+  id: string,
+): Promise<McpDiscoverResult> {
+  const res = await authFetch(`/api/mobile/mcp-servers/${id}/discover`, token, {
+    method: "POST",
+  })
+  return res.json()
+}
+
+// ============================================================
+// Memory — /api/mobile/memories (per-user AI memory)
+// ============================================================
+
+export type MemoryType = "WORKING" | "SEMANTIC" | "LONG_TERM"
+
+/** A single AI memory entry. */
+export interface MemoryItem {
+  id: string
+  type: string
+  key: string
+  value: unknown
+  confidence: number | null
+  source: string | null
+  createdAt: string
+  updatedAt: string
+  expiresAt: string | null
+}
+
+/** Memory counts by type. */
+export interface MemoryStats {
+  working: number
+  semantic: number
+  longTerm: number
+  total: number
+}
+
+/** The user's memories + stats — GET /api/mobile/memories?type=. */
+export async function getMemories(
+  token: string,
+  type?: MemoryType,
+): Promise<{ memories: MemoryItem[]; stats: MemoryStats }> {
+  const suffix = type ? `?type=${type}` : ""
+  const res = await authFetch(`/api/mobile/memories${suffix}`, token)
+  return res.json()
+}
+
+/** Clear all memories of a type — DELETE /api/mobile/memories. */
+export async function clearMemories(token: string, type: MemoryType): Promise<void> {
+  await authFetch("/api/mobile/memories", token, {
+    method: "DELETE",
+    body: JSON.stringify({ type }),
+  })
+}
+
+/** Delete one memory — DELETE /api/mobile/memories/:id. */
+export async function deleteMemory(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/memories/${id}`, token, { method: "DELETE" })
+}
+
+// ============================================================
+// Agent API keys — /api/mobile/agent-api-keys (owner/admin)
+// ============================================================
+
+/** An agent API key. `key` is the full secret (shown so it can be copied). */
+export interface AgentApiKey {
+  id: string
+  name: string
+  key: string
+  assistantId: string
+  scopes: string[]
+  ipWhitelist: string[]
+  requestCount: number
+  lastUsedAt: string | null
+  enabled: boolean
+  expiresAt: string | null
+  createdAt: string
+  updatedAt: string
+  assistant: { id: string; name: string; emoji: string | null } | null
+}
+
+/** List the org's agent API keys — GET /api/mobile/agent-api-keys. */
+export async function getAgentApiKeys(token: string): Promise<AgentApiKey[]> {
+  const res = await authFetch("/api/mobile/agent-api-keys", token)
+  return res.json()
+}
+
+/**
+ * Create an agent API key — POST /api/mobile/agent-api-keys. The response's
+ * `key` is the full secret; surface it once for the user to copy.
+ */
+export async function createAgentApiKey(
+  token: string,
+  input: { name: string; assistantId: string; scopes?: string[] },
+): Promise<AgentApiKey> {
+  const res = await authFetch("/api/mobile/agent-api-keys", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Update an agent API key (e.g. enable/disable, rename) — PUT .../:id. */
+export async function updateAgentApiKey(
+  token: string,
+  id: string,
+  input: { name?: string; enabled?: boolean; scopes?: string[] },
+): Promise<AgentApiKey> {
+  const res = await authFetch(`/api/mobile/agent-api-keys/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Revoke an agent API key — DELETE /api/mobile/agent-api-keys/:id. */
+export async function deleteAgentApiKey(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/agent-api-keys/${id}`, token, { method: "DELETE" })
+}
+
+/** A bindable/manageable tool from the catalog — GET /api/mobile/tools. */
 export interface AgentTool {
   id: string
   name: string
@@ -483,12 +891,56 @@ export interface AgentTool {
   category: string
   icon: string | null
   isBuiltIn: boolean
+  /** Present on the management list; not returned by older callers. */
+  enabled?: boolean
 }
 
-/** Catalog of tools that can be bound to an agent. */
+/** Catalog of tools (built-in + org custom), with enabled state. */
 export async function getTools(token: string): Promise<AgentTool[]> {
   const res = await authFetch("/api/mobile/tools", token)
   return res.json()
+}
+
+/** Create a custom (HTTP) tool — POST /api/mobile/tools. */
+export async function createTool(
+  token: string,
+  input: {
+    name: string
+    displayName: string
+    description: string
+    parameters?: object
+    executionConfig?: object | null
+  },
+): Promise<AgentTool> {
+  const res = await authFetch("/api/mobile/tools", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Update a custom tool (rename/enable/config) — PUT /api/mobile/tools/:id. */
+export async function updateTool(
+  token: string,
+  id: string,
+  input: {
+    displayName?: string
+    description?: string
+    enabled?: boolean
+    parameters?: object
+    executionConfig?: object | null
+  },
+): Promise<AgentTool> {
+  const res = await authFetch(`/api/mobile/tools/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Delete a custom tool — DELETE /api/mobile/tools/:id. */
+export async function deleteTool(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/tools/${id}`, token, { method: "DELETE" })
 }
 
 /**
@@ -514,6 +966,95 @@ export async function setAgentTools(
     method: "PUT",
     body: JSON.stringify({ toolIds }),
   })
+}
+
+/**
+ * IDs of skills currently bound to an agent —
+ * GET /api/mobile/assistants/:id/skills. (Catalog: getSkills.)
+ */
+export async function getAgentSkillIds(token: string, id: string): Promise<string[]> {
+  const res = await authFetch(`/api/mobile/assistants/${id}/skills`, token)
+  const rows: { id: string }[] = await res.json()
+  return rows.map((r) => r.id)
+}
+
+/**
+ * Replace an agent's skill bindings —
+ * PUT /api/mobile/assistants/:id/skills.
+ */
+export async function setAgentSkills(
+  token: string,
+  id: string,
+  skillIds: string[],
+): Promise<void> {
+  await authFetch(`/api/mobile/assistants/${id}/skills`, token, {
+    method: "PUT",
+    body: JSON.stringify({ skillIds }),
+  })
+}
+
+/** A skill in the org catalog (Settings → Skills management). */
+export interface ManagedSkill {
+  id: string
+  name: string
+  displayName: string
+  description: string
+  content: string
+  category: string
+  tags: string[]
+  source: string
+  enabled: boolean
+  assistantCount?: number
+}
+
+/** Full org skill catalog — GET /api/mobile/skills?scope=manage. */
+export async function getManagedSkills(token: string): Promise<ManagedSkill[]> {
+  const res = await authFetch("/api/mobile/skills?scope=manage", token)
+  return res.json()
+}
+
+/** Create a custom skill — POST /api/mobile/skills. */
+export async function createSkill(
+  token: string,
+  input: {
+    name: string
+    displayName: string
+    content: string
+    description?: string
+    category?: string
+    tags?: string[]
+  },
+): Promise<ManagedSkill> {
+  const res = await authFetch("/api/mobile/skills", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Update a custom skill — PUT /api/mobile/skills/:id. */
+export async function updateSkill(
+  token: string,
+  id: string,
+  input: {
+    displayName?: string
+    description?: string
+    content?: string
+    category?: string
+    tags?: string[]
+    enabled?: boolean
+  },
+): Promise<ManagedSkill> {
+  const res = await authFetch(`/api/mobile/skills/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Delete a custom skill — DELETE /api/mobile/skills/:id. */
+export async function deleteSkill(token: string, id: string): Promise<void> {
+  await authFetch(`/api/mobile/skills/${id}`, token, { method: "DELETE" })
 }
 
 export interface ChatMessage {
@@ -1061,4 +1602,271 @@ export async function getDocumentIntelligence(
 ): Promise<DocumentIntelligence> {
   const res = await authFetch(`/api/mobile/knowledge/documents/${id}/intelligence`, token)
   return res.json()
+}
+
+// ============================================================
+// Billing — /api/mobile/billing (cloud app; Midtrans credits/plans)
+// ============================================================
+
+/** Full billing snapshot (mirrors the cloud BillingData; dates as ISO strings). */
+export interface Billing {
+  plan: { id: string; name: string; priceIdr: number; priceUsd: number; totalCredits: number }
+  credits: { current: number; used: number; total: number; resetAt: string | null }
+  subscription: {
+    status: string
+    currentPeriodEnd: string | null
+    renewsAt: string | null
+    endsAt: string | null
+    gracePeriodEnd: string | null
+    cancelAtPeriodEnd: boolean
+  } | null
+  pendingInvoice: {
+    invoiceNumber: string | null
+    amountTotal: number
+    paymentLinkUrl: string | null
+    dueDate: string | null
+  } | null
+  billingProfile: {
+    name: string | null
+    email: string | null
+    npwp: string | null
+    address: string | null
+  }
+  usage: {
+    members: { current: number; max: number }
+    assistants: { current: number; max: number }
+    storageMB: { current: number; max: number }
+    apiKeys: { current: number; max: number }
+  }
+  invoices: Array<{
+    id: string
+    invoiceNumber: string | null
+    amountTotal: number
+    currency: string
+    status: string
+    pdfUrl: string | null
+    paidPdfUrl: string | null
+    paymentLinkUrl: string | null
+    receiptUrl: string | null
+    dueDate: string | null
+    paidAt: string | null
+    createdAt: string
+  }>
+  creditPacks: Array<{
+    id: string
+    packId: string
+    creditsGranted: number
+    amountIdr: number
+    status: string
+    receiptUrl: string | null
+    paidAt: string | null
+    createdAt: string
+  }>
+}
+
+/** Billing snapshot for the active org — GET /api/mobile/billing (null if none). */
+export async function getBilling(token: string): Promise<Billing | null> {
+  const res = await authFetch("/api/mobile/billing", token)
+  return res.json()
+}
+
+/** Update the org billing profile (owner) — POST /api/mobile/billing/profile. */
+export async function updateBillingProfile(
+  token: string,
+  input: {
+    billingName?: string | null
+    billingEmail?: string | null
+    npwp?: string | null
+    billingAddress?: string | null
+  },
+): Promise<void> {
+  await authFetch("/api/mobile/billing/profile", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+/**
+ * Cancel (or resume) the subscription at period end (owner) —
+ * POST /api/mobile/billing/cancel[?action=resume].
+ */
+export async function cancelSubscription(
+  token: string,
+  resume = false,
+): Promise<void> {
+  await authFetch(`/api/mobile/billing/cancel${resume ? "?action=resume" : ""}`, token, {
+    method: "POST",
+  })
+}
+
+/** Void the current unpaid invoice (owner) — POST /api/mobile/billing/cancel-invoice. */
+export async function cancelPendingInvoice(token: string): Promise<void> {
+  await authFetch("/api/mobile/billing/cancel-invoice", token, { method: "POST" })
+}
+
+/** A usage bucket: used vs limit with a reset time. */
+export interface UsageBucket {
+  used: number
+  limit: number
+  resetAt: string
+}
+
+/** Free-tier + RantAI usage — GET /api/mobile/billing/free-limits. */
+export interface FreeLimits {
+  plan: string
+  isFree: boolean
+  freeModels?: UsageBucket
+  nano?: UsageBucket
+  rantai: { day: UsageBucket; week: UsageBucket; unlimited: boolean } | null
+}
+
+/** Free-tier + RantAI usage buckets — GET /api/mobile/billing/free-limits. */
+export async function getFreeLimits(token: string): Promise<FreeLimits> {
+  const res = await authFetch("/api/mobile/billing/free-limits", token)
+  return res.json()
+}
+
+// ============================================================
+// Marketplace — /api/mobile/marketplace
+// ============================================================
+
+/** The 5 catalog item types. */
+export type MarketplaceType = "tool" | "skill" | "workflow" | "assistant" | "mcp"
+
+/** A marketplace catalog item with the caller's org install state. */
+export interface MarketplaceItem {
+  id: string
+  name: string
+  displayName: string
+  description: string
+  category: string
+  type: MarketplaceType
+  icon: string
+  tags: string[]
+  installed: boolean
+  installedId?: string
+  skillId?: string
+  isBuiltIn?: boolean
+  communitySkillName?: string | null
+  communityToolName?: string | null
+  configSchema?: object | null
+}
+
+/** A tool bundled inside a skill (shown on skill detail). */
+export interface MarketplaceToolInfo {
+  name: string
+  displayName: string
+  description: string
+  parameters: object
+  tags?: string[]
+}
+
+/** The assistant starter payload (only on the mobile detail for assistants). */
+export interface MarketplaceAssistantTemplate {
+  name: string
+  description: string
+  emoji: string
+  systemPrompt: string
+  model: string
+  suggestedToolNames: string[]
+  suggestedSkillNames?: string[]
+  useKnowledgeBase: boolean
+  memoryConfig: object
+  tags: string[]
+}
+
+/** Full detail for one catalog item. */
+export interface MarketplaceItemDetail extends MarketplaceItem {
+  version?: string
+  author?: string
+  skillPrompt?: string
+  tools?: MarketplaceToolInfo[]
+  sharedToolNames?: string[]
+  toolParameters?: object
+  toolTags?: string[]
+  /** Present for `assistant` items — used to pre-fill the agent builder. */
+  assistantTemplate?: MarketplaceAssistantTemplate
+}
+
+/** Map a marketplace assistant template to the agent-editor create payload. */
+export function marketplaceAssistantToInput(
+  t: MarketplaceAssistantTemplate,
+): AgentInput {
+  return {
+    name: t.name,
+    description: t.description,
+    emoji: t.emoji,
+    systemPrompt: t.systemPrompt,
+    model: t.model,
+    tags: t.tags,
+    useKnowledgeBase: t.useKnowledgeBase,
+    knowledgeBaseGroupIds: [],
+    memoryConfig: t.memoryConfig as MemoryConfig,
+  }
+}
+
+/** Result of installing a marketplace item. */
+export interface MarketplaceInstallResult {
+  success: boolean
+  installedId?: string
+  skillId?: string
+  toolIds?: string[]
+  error?: string
+}
+
+/**
+ * Browse the catalog with install state — GET /api/mobile/marketplace.
+ * Items come back featured-first from the server.
+ */
+export async function getMarketplaceItems(
+  token: string,
+  filters?: { type?: MarketplaceType; category?: string; q?: string },
+): Promise<{ items: MarketplaceItem[]; categories: string[]; total: number }> {
+  const qs = new URLSearchParams()
+  if (filters?.type) qs.set("type", filters.type)
+  if (filters?.category) qs.set("category", filters.category)
+  if (filters?.q) qs.set("q", filters.q)
+  const suffix = qs.toString() ? `?${qs.toString()}` : ""
+  const res = await authFetch(`/api/mobile/marketplace${suffix}`, token)
+  return res.json()
+}
+
+/** Full detail for one catalog item — GET /api/mobile/marketplace/:id. */
+export async function getMarketplaceItem(
+  token: string,
+  id: string,
+): Promise<MarketplaceItemDetail> {
+  const res = await authFetch(`/api/mobile/marketplace/${id}`, token)
+  return res.json()
+}
+
+/**
+ * Install a catalog item into the org (clones it) —
+ * POST /api/mobile/marketplace/install.
+ */
+export async function installMarketplaceItem(
+  token: string,
+  catalogItemId: string,
+  opts?: { authConfig?: object; config?: object },
+): Promise<MarketplaceInstallResult> {
+  const res = await authFetch("/api/mobile/marketplace/install", token, {
+    method: "POST",
+    body: JSON.stringify({ catalogItemId, ...(opts ?? {}) }),
+  })
+  return res.json()
+}
+
+/**
+ * Uninstall a catalog item from the org —
+ * DELETE /api/mobile/marketplace/install?catalogItemId=.
+ */
+export async function uninstallMarketplaceItem(
+  token: string,
+  catalogItemId: string,
+): Promise<void> {
+  await authFetch(
+    `/api/mobile/marketplace/install?catalogItemId=${encodeURIComponent(catalogItemId)}`,
+    token,
+    { method: "DELETE" },
+  )
 }
