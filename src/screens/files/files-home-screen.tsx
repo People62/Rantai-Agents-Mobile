@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 
 import { Button, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   KnowledgeGroup,
   createKnowledgeGroup,
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
   },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  backdrop: { flex: 1, backgroundColor: Scrim, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
 
   // action sheet
   sheetMenu: { width: '100%', maxWidth: 360, borderRadius: Radius.xl, borderWidth: StyleSheet.hairlineWidth * 2, paddingVertical: Spacing.two },

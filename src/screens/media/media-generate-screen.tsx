@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 
 import { Button, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   GenerateMediaInput,
   MediaModality,
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   error: { fontSize: FontSize.sm },
   generateBtn: { marginTop: Spacing.one },
   hint: { fontSize: FontSize.xs, textAlign: 'center' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: Scrim, justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,

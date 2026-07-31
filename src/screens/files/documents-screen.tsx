@@ -25,7 +25,7 @@ import {
 } from 'react-native';
 
 import { Button, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   KnowledgeCategory,
   KnowledgeDocumentListItem,
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
   sep: { height: StyleSheet.hairlineWidth },
 
   // upload dialog
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: Scrim, justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth * 2, paddingTop: Spacing.four, maxHeight: '85%',
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   overlaySub: { fontSize: FontSize.sm, textAlign: 'center' },
 
   // action sheet + dialogs
-  centerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  centerBackdrop: { flex: 1, backgroundColor: Scrim, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   sheetMenu: { width: '100%', maxWidth: 360, borderRadius: Radius.xl, borderWidth: StyleSheet.hairlineWidth * 2, paddingVertical: Spacing.two },
   menuTitle: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.four, paddingVertical: Spacing.three },

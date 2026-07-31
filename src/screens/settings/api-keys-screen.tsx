@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 
 import { Button, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   Agent,
   AgentApiKey,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   keyText: { flex: 1, fontSize: FontSize.sm, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
 
   // Create sheet
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheetBackdrop: { flex: 1, backgroundColor: Scrim, justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.four, alignSelf: 'stretch' },
 
   // Dialogs
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  backdrop: { flex: 1, backgroundColor: Scrim, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   dialog: {
     width: '100%',
     maxWidth: 380,

@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 
 import { Button, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   Workflow,
   WorkflowRun,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   muted: { fontSize: FontSize.base },
 
   // Run modal
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: Scrim, justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   startBtn: { marginTop: Spacing.one },
 
   // Delete dialog
-  dialogBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  dialogBackdrop: { flex: 1, backgroundColor: Scrim, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   dialog: {
     width: '100%',
     maxWidth: 360,

@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 
 import { Button, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   ApiError,
   McpServer,
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   discoverText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
 
   // Form sheet
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheetBackdrop: { flex: 1, backgroundColor: Scrim, justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   formActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.four },
 
   // Delete dialog
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  backdrop: { flex: 1, backgroundColor: Scrim, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   dialog: {
     width: '100%',
     maxWidth: 360,

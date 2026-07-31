@@ -46,7 +46,7 @@ import {
 } from 'react-native';
 
 import { Button, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   AgentInput,
   AgentModel,
@@ -1323,7 +1323,7 @@ const styles = StyleSheet.create({
   webOnlyBadgeText: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold },
 
   // Picker sheets
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheetBackdrop: { flex: 1, backgroundColor: Scrim, justifyContent: 'flex-end' },
   pickerSheet: {
     borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth * 2, paddingTop: Spacing.four, paddingBottom: Spacing.four, maxHeight: '70%',

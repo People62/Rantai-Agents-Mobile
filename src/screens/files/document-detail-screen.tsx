@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 
 import { Button, Screen } from '@/components/ui';
-import { Fonts, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, Fonts, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   DocumentIntelligence,
   KnowledgeDocumentDetail,
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   chunk: { borderRadius: Radius.sm, padding: Spacing.three, gap: Spacing.one },
   chunkIdx: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold },
   chunkText: { fontSize: FontSize.sm, fontFamily: Fonts.mono, lineHeight: 18 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  backdrop: { flex: 1, backgroundColor: Scrim, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   dialog: { width: '100%', maxWidth: 360, borderRadius: Radius.xl, borderWidth: StyleSheet.hairlineWidth * 2, padding: Spacing.four, gap: Spacing.three },
   dialogTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold },
   input: { height: 46, borderRadius: Radius.md, borderWidth: StyleSheet.hairlineWidth * 2, paddingHorizontal: Spacing.three, fontSize: FontSize.md },

@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 
 import { Button, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   ApiError,
   MemberRole,
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   // Dialogs / sheets
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: Scrim,
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.four,
