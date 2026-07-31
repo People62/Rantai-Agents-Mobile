@@ -9,7 +9,7 @@
  * `textSecondary` are kept for compatibility with older components.
  */
 
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 export const Colors = {
   light: {
@@ -25,6 +25,21 @@ export const Colors = {
     accentForeground: '#FFFFFF',
     border: '#DBD7D0',
     destructive: '#E7000B',
+    // Component token: outgoing chat bubble. Currently equals `accent`, but kept
+    // separate so "my message" can diverge from links/buttons without a refactor.
+    chatBubbleMine: '#0071DF',
+    chatBubbleMineText: '#FFFFFF',
+    shadow: '#000000', // drop-shadow colour (dark in both themes)
+    // Component tokens: fenced code block (editor-like surface + text).
+    codeSurface: '#F3F1ED',
+    codeText: '#1B1B1B',
+    // Syntax-highlight palette (GitHub-light-like, tuned for codeSurface).
+    codeComment: '#8A8F98',
+    codeKeyword: '#A626A4',
+    codeString: '#50A14F',
+    codeNumber: '#986801',
+    codeFunction: '#4078F2',
+    codeDecorator: '#C18401',
   },
   dark: {
     text: '#FAFAFA',
@@ -39,6 +54,18 @@ export const Colors = {
     accentForeground: '#FFFFFF',
     border: '#3A3A3C',
     destructive: '#82181A',
+    chatBubbleMine: '#0071DF',
+    chatBubbleMineText: '#FFFFFF',
+    shadow: '#000000',
+    codeSurface: '#161618',
+    codeText: '#E8E8E8',
+    // Syntax-highlight palette (One-Dark-like, tuned for the dark codeSurface).
+    codeComment: '#6A737D',
+    codeKeyword: '#C678DD',
+    codeString: '#98C379',
+    codeNumber: '#D19A66',
+    codeFunction: '#61AFEF',
+    codeDecorator: '#E5C07B',
   },
 } as const;
 
@@ -127,6 +154,19 @@ export const Spacing = {
   five: 32,
   six: 64,
 } as const;
+
+/**
+ * Border-width scale (theme-invariant). `regular` is the default hairline*2 used
+ * for most component borders; `accent` is the coloured left-bar on quotes/replies.
+ */
+export const BorderWidth = {
+  hairline: StyleSheet.hairlineWidth,
+  regular: StyleSheet.hairlineWidth * 2,
+  accent: 3,
+} as const;
+
+/** Modal/overlay scrim colour — the same dim in light & dark, so not a theme key. */
+export const Scrim = 'rgba(0,0,0,0.45)';
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
