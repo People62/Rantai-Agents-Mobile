@@ -47,7 +47,7 @@ import {
 } from 'react-native';
 
 import { Input } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { BorderWidth, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { getSkills, Skill, uploadAttachment } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
@@ -161,10 +161,24 @@ function ToolToggleRow(props: {
           value={props.value}
           onValueChange={props.onValueChange}
           trackColor={{ true: theme.accent, false: theme.backgroundSelected }}
-          thumbColor="#fff"
+          thumbColor={theme.accentForeground}
         />
       }
     />
+  );
+}
+
+/**
+ * Radio indicator for single-select (mutually-exclusive) rows — Auto/Off modes
+ * and the Canvas artifact type. A circle communicates "pick one", distinct from
+ * the square checkbox used for the multi-select tool/skill lists.
+ */
+function Radio({ selected }: { selected: boolean }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.radio, { borderColor: selected ? theme.accent : theme.border }]}>
+      {selected ? <View style={[styles.radioDot, { backgroundColor: theme.accent }]} /> : null}
+    </View>
   );
 }
 
@@ -359,6 +373,8 @@ export function Composer({
             setSheetView('main');
             sheet.current?.present();
           }}
+          accessibilityRole="button"
+          accessibilityLabel="Tools and attachments"
           style={({ pressed }) => [
             styles.plusBtn,
             {
@@ -384,6 +400,8 @@ export function Composer({
         <Pressable
           onPress={submit}
           disabled={!canSend}
+          accessibilityRole="button"
+          accessibilityLabel="Send message"
           style={({ pressed }) => [
             styles.sendBtn,
             {
@@ -479,7 +497,7 @@ export function Composer({
                 description="Use the selected tools"
                 highlight={toolsMode === 'auto'}
                 onPress={() => setToolsMode('auto')}
-                right={toolsMode === 'auto' ? <Check color={theme.accent} size={20} /> : null}
+                right={<Radio selected={toolsMode === 'auto'} />}
               />
               <ToolRowBase
                 icon={X}
@@ -487,7 +505,7 @@ export function Composer({
                 description="Turn off all tools"
                 highlight={toolsMode === 'off'}
                 onPress={() => setToolsMode('off')}
-                right={toolsMode === 'off' ? <Check color={theme.accent} size={20} /> : null}
+                right={<Radio selected={toolsMode === 'off'} />}
               />
               <Text style={[styles.sheetSection, { color: theme.textSecondary }]}>Select tools</Text>
               {SELECTABLE_TOOLS.map((t) => {
@@ -531,7 +549,7 @@ export function Composer({
                 description="Use the selected skills"
                 highlight={skillsMode === 'auto'}
                 onPress={() => setSkillsMode('auto')}
-                right={skillsMode === 'auto' ? <Check color={theme.accent} size={20} /> : null}
+                right={<Radio selected={skillsMode === 'auto'} />}
               />
               <ToolRowBase
                 icon={X}
@@ -539,7 +557,7 @@ export function Composer({
                 description="Turn off all skills"
                 highlight={skillsMode === 'off'}
                 onPress={() => setSkillsMode('off')}
-                right={skillsMode === 'off' ? <Check color={theme.accent} size={20} /> : null}
+                right={<Radio selected={skillsMode === 'off'} />}
               />
               <Text style={[styles.sheetSection, { color: theme.textSecondary }]}>Select skills</Text>
               {skillsLoading ? (
@@ -591,7 +609,7 @@ export function Composer({
                 description="No artifact"
                 highlight={canvasMode === ''}
                 onPress={() => setCanvasMode('')}
-                right={canvasMode === '' ? <Check color={theme.accent} size={20} /> : null}
+                right={<Radio selected={canvasMode === ''} />}
               />
               <ToolRowBase
                 icon={Zap}
@@ -599,7 +617,7 @@ export function Composer({
                 description="AI decides the artifact type"
                 highlight={canvasMode === 'auto'}
                 onPress={() => setCanvasMode('auto')}
-                right={canvasMode === 'auto' ? <Check color={theme.accent} size={20} /> : null}
+                right={<Radio selected={canvasMode === 'auto'} />}
               />
               <Text style={[styles.sheetSection, { color: theme.textSecondary }]}>Artifact Type</Text>
               {ARTIFACT_TYPES.map((t) => {
@@ -612,7 +630,7 @@ export function Composer({
                     description={t.value}
                     highlight={on}
                     onPress={() => setCanvasMode(t.value)}
-                    right={on ? <Check color={theme.accent} size={20} /> : null}
+                    right={<Radio selected={on} />}
                   />
                 );
               })}
@@ -635,7 +653,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     borderRadius: Radius.md,
-    borderLeftWidth: 3,
+    borderLeftWidth: BorderWidth.accent,
   },
   replyLabel: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold },
   replyText: { fontSize: FontSize.sm },
@@ -709,4 +727,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: Radius.full,
+    borderWidth: StyleSheet.hairlineWidth * 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioDot: { width: 10, height: 10, borderRadius: Radius.full },
 });

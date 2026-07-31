@@ -72,12 +72,18 @@ export function AppDrawer() {
         component={NewChatScreen}
         options={{
           title: 'New Chat',
-          // Transit screen (immediately redirected to Home) — no header so the
-          // "New Chat" label never briefly shows at the top.
           headerShown: false,
           drawerLabelStyle: { fontSize: FontSize.lg, fontFamily: FontFamily.medium, color: theme.accent },
           drawerIcon: () => <MessageCirclePlus color={theme.accent} size={FontSize.xxl} />,
         }}
+        listeners={({ navigation }) => ({
+          // "New Chat" is an action, not a destination: jump straight to the Home
+          // composer instead of focusing a blank transit screen (which flickered).
+          drawerItemPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('Home');
+          },
+        })}
       />
       <Drawer.Screen
         name="ChatTab"

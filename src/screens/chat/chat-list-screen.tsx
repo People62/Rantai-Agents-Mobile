@@ -5,7 +5,7 @@
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { MessageCirclePlus, Pencil, Search, Trash2 } from 'lucide-react-native';
+import { MessageCircle, MessageCirclePlus, Pencil, Search, Trash2 } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,8 +20,8 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Button, EmptyState, Screen } from '@/components/ui';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   Agent,
   ChatSessionSummary,
@@ -228,14 +228,15 @@ export function ChatListScreen({ navigation }: Props) {
         }
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              {query ? 'No results' : 'No conversations yet'}
-            </Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              {query
-                ? `No conversations match "${query}".`
-                : 'New conversations will appear here.'}
-            </Text>
+            <EmptyState
+              icon={query ? Search : MessageCircle}
+              title={query ? 'No results' : 'No conversations yet'}
+              subtitle={
+                query
+                  ? `No conversations match "${query}".`
+                  : 'New conversations will appear here.'
+              }
+            />
           </View>
         }
         ItemSeparatorComponent={() => (
@@ -279,9 +280,11 @@ export function ChatListScreen({ navigation }: Props) {
         }
         style={({ pressed }) => [
           styles.fab,
-          { backgroundColor: theme.accent, opacity: pressed ? 0.9 : 1 },
+          { backgroundColor: theme.accent, shadowColor: theme.shadow, opacity: pressed ? 0.9 : 1 },
         ]}
-        hitSlop={8}>
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="New chat">
         <MessageCirclePlus color={theme.accentForeground} size={26} />
       </Pressable>
 
@@ -423,7 +426,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
   searchInput: { flex: 1, fontSize: FontSize.md, padding: 0 },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
   list: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
   row: {
@@ -431,8 +433,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
     paddingVertical: Spacing.three,
-    borderRadius: 12,
-    // backgroundColor: 'red'
+    borderRadius: Radius.lg,
   },
   avatar: {
     width: 44,
@@ -442,7 +443,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarEmoji: { fontSize: 22 },
-  rowText: { flex: 1, gap: 2, marginHorizontal: Spacing.two },
+  rowText: { flex: 1, gap: Spacing.half, marginHorizontal: Spacing.two },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
   name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, flex: 1 },
   time: { fontSize: FontSize.xs },
@@ -458,7 +459,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
-    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   // --- Modal ---
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: Scrim,
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.four,
