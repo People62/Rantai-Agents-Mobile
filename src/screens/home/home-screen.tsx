@@ -25,7 +25,7 @@ import {
 
 import { Composer, type ComposerOptions } from '@/components/chat/composer';
 import { Logo, Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { Agent, createChatSession, getAgents } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   chipText: { fontSize: FontSize.base, fontWeight: FontWeight.medium, flexShrink: 1 },
 
   // picker
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: Scrim, justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,

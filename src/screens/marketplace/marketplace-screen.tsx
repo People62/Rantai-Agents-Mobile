@@ -36,7 +36,7 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   MarketplaceItem,
   MarketplaceItemDetail,
@@ -703,15 +703,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    height: 42,
+    height: 44,
     paddingHorizontal: Spacing.three,
-    borderRadius: Radius.md,
+    borderRadius: Radius.full,
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
   searchInput: { flex: 1, fontSize: FontSize.md, padding: 0 },
   sortBtn: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: Radius.md,
     borderWidth: StyleSheet.hairlineWidth * 2,
     alignItems: 'center',
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
   actionText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
 
   // Detail sheet
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheetBackdrop: { flex: 1, backgroundColor: Scrim, justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
   // Menus
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: Scrim,
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.four,

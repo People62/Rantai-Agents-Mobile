@@ -37,6 +37,8 @@ export function ChatStack() {
                 navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.openDrawer()
               }
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Open menu"
               style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
               <Menu color={theme.text} size={24} />
             </Pressable>

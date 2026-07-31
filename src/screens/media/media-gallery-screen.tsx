@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { MediaAsset, MediaModality, getMediaAssets, mediaFileSource } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     right: 4,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: Scrim,
     borderRadius: 10,
     padding: 3,
   },
