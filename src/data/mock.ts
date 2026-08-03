@@ -33,19 +33,6 @@ export const marketItems: MarketItem[] = [
   { id: 'm4', name: 'Sales Analyst', description: 'Automated sales data analysis.', category: 'Assistant', installs: '8K' },
 ];
 
-export type Agent = {
-  id: string;
-  name: string;
-  role: string;
-  status: 'active' | 'idle';
-};
-
-export const agents: Agent[] = [
-  { id: 'a1', name: 'Aria', role: 'Sales Digital Employee', status: 'active' },
-  { id: 'a2', name: 'Beno', role: 'Support Operator', status: 'idle' },
-  { id: 'a3', name: 'Cira', role: 'Research Analyst', status: 'active' },
-];
-
 export type KnowledgeFile = {
   id: string;
   name: string;
