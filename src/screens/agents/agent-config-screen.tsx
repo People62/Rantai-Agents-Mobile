@@ -29,7 +29,7 @@ import {
   X,
   Zap,
 } from 'lucide-react-native';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -211,6 +211,12 @@ export function AgentConfigScreen({ route, navigation }: Props) {
   const [models, setModels] = useState<AgentModel[]>([]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [promptPickerOpen, setPromptPickerOpen] = useState(false);
+  const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
+
+  // Unsaved-changes guard: baseline snapshot + a pending "leave" action to run
+  // once the user confirms discarding.
+  const leavingRef = useRef(false);
+  const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -311,6 +317,7 @@ export function AgentConfigScreen({ route, navigation }: Props) {
       if (skillsReady) {
         await setAgentSkills(token, agentId, skillIds);
       }
+      leavingRef.current = true; // saved → allow the beforeRemove guard to pass
       navigation.goBack();
     } catch {
       setError('Failed to save. Please try again.');
@@ -370,6 +377,39 @@ export function AgentConfigScreen({ route, navigation }: Props) {
     );
   }, [skills, skillQuery]);
 
+  // Serialized form state; compared against a baseline captured after load to
+  // know whether there are unsaved edits.
+  const snapshot = useMemo(
+    () =>
+      JSON.stringify({
+        name, systemPrompt, description, emoji, tags, openingMessage, openingQuestions,
+        liveChatEnabled, model, mc, useKb, kbGroupIds, mem, gr, chat, toolIds, skillIds,
+      }),
+    [
+      name, systemPrompt, description, emoji, tags, openingMessage, openingQuestions,
+      liveChatEnabled, model, mc, useKb, kbGroupIds, mem, gr, chat, toolIds, skillIds,
+    ],
+  );
+  const baselineRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!loading && baselineRef.current === null) baselineRef.current = snapshot;
+  }, [loading, snapshot]);
+  const isDirty = baselineRef.current !== null && baselineRef.current !== snapshot;
+
+  // Intercept back (header/gesture/hardware) while there are unsaved edits.
+  useEffect(() => {
+    const unsub = navigation.addListener('beforeRemove', (e) => {
+      if (leavingRef.current || !isDirty || saving) return;
+      e.preventDefault();
+      const { action } = e.data;
+      setPendingLeave(() => () => {
+        leavingRef.current = true;
+        navigation.dispatch(action);
+      });
+    });
+    return unsub;
+  }, [navigation, isDirty, saving]);
+
   if (loading) {
     return (
       <Screen edges={['bottom']}>
@@ -381,51 +421,29 @@ export function AgentConfigScreen({ route, navigation }: Props) {
   }
 
   const activeTab = TABS.find((t) => t.id === tab)!;
+  const ActiveIcon = activeTab.icon;
 
   return (
     <Screen padded={false} edges={['bottom']}>
-      {/* Section tabs */}
-      <View style={[styles.tabBarWrap, { borderBottomColor: theme.border }]}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabBar}>
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const active = t.id === tab;
-            return (
-              <Pressable
-                key={t.id}
-                onPress={() => setTab(t.id)}
-                style={[
-                  styles.tabChip,
-                  {
-                    backgroundColor: active ? theme.accent : theme.backgroundElement,
-                  },
-                ]}>
-                <Icon
-                  color={active ? theme.accentForeground : theme.textSecondary}
-                  size={15}
-                />
-                <Text
-                  style={[
-                    styles.tabChipText,
-                    { color: active ? theme.accentForeground : theme.text },
-                  ]}>
-                  {t.label}
-                </Text>
-                {!t.editable ? (
-                  <View
-                    style={[
-                      styles.tabDot,
-                      { backgroundColor: active ? theme.accentForeground : theme.textSecondary },
-                    ]}
-                  />
-                ) : null}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+      {/* Section selector — opens a sheet listing every section (grouped
+          Editable / Managed on web) instead of a 12-item horizontal scroller. */}
+      <View style={[styles.selectorWrap, { borderBottomColor: theme.border }]}>
+        <Pressable
+          onPress={() => setSectionPickerOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Section: ${activeTab.label}. Tap to change section.`}
+          style={[styles.sectionSelect, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+          <ActiveIcon color={activeTab.editable ? theme.accent : theme.textSecondary} size={18} />
+          <Text style={[styles.sectionSelectText, { color: theme.text }]} numberOfLines={1}>
+            {activeTab.label}
+          </Text>
+          {!activeTab.editable ? (
+            <Text style={[styles.webBadge, { color: theme.textSecondary, borderColor: theme.border }]}>
+              web
+            </Text>
+          ) : null}
+          <ChevronDown color={theme.textSecondary} size={18} />
+        </Pressable>
       </View>
 
       <KeyboardAvoidingView
@@ -689,7 +707,7 @@ export function AgentConfigScreen({ route, navigation }: Props) {
                                 )
                               }
                               trackColor={{ true: theme.accent, false: theme.border }}
-                              thumbColor="#fff"
+                              thumbColor={theme.accentForeground}
                             />
                           </Pressable>
                         );
@@ -766,7 +784,7 @@ export function AgentConfigScreen({ route, navigation }: Props) {
                                 )
                               }
                               trackColor={{ true: theme.accent, false: theme.border }}
-                              thumbColor="#fff"
+                              thumbColor={theme.accentForeground}
                             />
                           </Pressable>
                         );
@@ -1001,6 +1019,87 @@ export function AgentConfigScreen({ route, navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Section picker */}
+      <Modal
+        visible={sectionPickerOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSectionPickerOpen(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setSectionPickerOpen(false)}>
+          <Pressable style={[styles.pickerSheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.pickerTitle, { color: theme.text }]}>Sections</Text>
+            <ScrollView style={styles.sectionSheetList} contentContainerStyle={styles.sectionSheetContent}>
+              {(['editable', 'web'] as const).map((group) => {
+                const rows = TABS.filter((t) => (group === 'editable' ? t.editable : !t.editable));
+                return (
+                  <View key={group}>
+                    <Text style={[styles.sectionGroupLabel, { color: theme.textSecondary }]}>
+                      {group === 'editable' ? 'Editable' : 'Managed on web'}
+                    </Text>
+                    {rows.map((t) => {
+                      const Icon = t.icon;
+                      const on = t.id === tab;
+                      return (
+                        <Pressable
+                          key={t.id}
+                          onPress={() => {
+                            setTab(t.id);
+                            setSectionPickerOpen(false);
+                          }}
+                          style={({ pressed }) => [
+                            styles.sectionRow,
+                            pressed && { backgroundColor: theme.backgroundElement },
+                          ]}>
+                          <View style={[styles.sectionRowIcon, { backgroundColor: theme.backgroundElement }]}>
+                            <Icon color={t.editable ? theme.accent : theme.textSecondary} size={18} />
+                          </View>
+                          <Text style={[styles.sectionRowText, { color: theme.text }]}>{t.label}</Text>
+                          {on ? <Check color={theme.accent} size={18} /> : null}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Discard-changes confirmation */}
+      <Modal
+        visible={!!pendingLeave}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPendingLeave(null)}>
+        <Pressable style={styles.confirmBackdrop} onPress={() => setPendingLeave(null)}>
+          <Pressable style={[styles.confirmDialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.confirmTitle, { color: theme.text }]}>Discard changes?</Text>
+            <Text style={[styles.confirmMsg, { color: theme.textSecondary }]}>
+              You have unsaved changes. Leaving now will discard them.
+            </Text>
+            <View style={styles.confirmActions}>
+              <Button
+                label="Keep editing"
+                variant="outline"
+                onPress={() => setPendingLeave(null)}
+                style={styles.flex}
+              />
+              <Button
+                label="Discard"
+                variant="destructive"
+                onPress={() => {
+                  const go = pendingLeave;
+                  setPendingLeave(null);
+                  go?.();
+                }}
+                style={styles.flex}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -1040,7 +1139,7 @@ function Toggle({
         onValueChange={onValueChange}
         disabled={disabled}
         trackColor={{ true: theme.accent, false: theme.border }}
-        thumbColor="#fff"
+        thumbColor={theme.accentForeground}
       />
     </View>
   );
@@ -1202,18 +1301,57 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.four, paddingBottom: Spacing.six, gap: Spacing.four },
   section: { gap: Spacing.four },
 
-  tabBarWrap: { borderBottomWidth: StyleSheet.hairlineWidth },
-  tabBar: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.two },
-  tabChip: {
+  selectorWrap: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  sectionSelect: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.two,
+    height: 44,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Radius.full,
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
   },
-  tabChipText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
-  tabDot: { width: 5, height: 5, borderRadius: 3, opacity: 0.7 },
+  sectionSelectText: { flex: 1, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  webBadge: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    textTransform: 'uppercase',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: Radius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    overflow: 'hidden',
+  },
+  sectionSheetList: { flexGrow: 0 },
+  sectionSheetContent: { paddingBottom: Spacing.two },
+  sectionGroupLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.one,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+  },
+  sectionRowIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionRowText: { flex: 1, fontSize: FontSize.md, fontWeight: FontWeight.medium },
 
   headerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.three },
   emoji: {
@@ -1225,8 +1363,8 @@ const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.two },
   optional: { fontWeight: FontWeight.regular },
   hint: { fontSize: FontSize.sm },
-  counter: { fontSize: FontSize.xs, marginTop: 4, textAlign: 'right' },
-  templateBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  counter: { fontSize: FontSize.xs, marginTop: Spacing.one, textAlign: 'right' },
+  templateBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   templateBtnText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
 
   input: {
@@ -1240,7 +1378,7 @@ const styles = StyleSheet.create({
 
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   toggleLabel: { fontSize: FontSize.md, fontWeight: FontWeight.medium },
-  toggleHint: { fontSize: FontSize.sm, marginTop: 2 },
+  toggleHint: { fontSize: FontSize.sm, marginTop: Spacing.half },
 
   stepperRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   stepper: {
@@ -1257,7 +1395,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full, borderWidth: StyleSheet.hairlineWidth * 2,
   },
   selectChipText: { fontSize: FontSize.sm, fontWeight: FontWeight.medium },
-  dot: { width: 10, height: 10, borderRadius: 5 },
+  dot: { width: 10, height: 10, borderRadius: Radius.full },
 
   listEditor: { gap: Spacing.two },
   listInputRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
@@ -1286,9 +1424,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    height: 42,
+    height: 44,
     paddingHorizontal: Spacing.three,
-    borderRadius: Radius.md,
+    borderRadius: Radius.full,
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
   searchInput: { flex: 1, fontSize: FontSize.md, padding: 0 },
@@ -1312,7 +1450,7 @@ const styles = StyleSheet.create({
   toolName: { flexShrink: 1, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
   toolCat: { paddingHorizontal: Spacing.two, paddingVertical: 1, borderRadius: Radius.full },
   toolCatText: { fontSize: FontSize.xs, fontWeight: FontWeight.medium, textTransform: 'capitalize' },
-  toolDesc: { fontSize: FontSize.sm, marginTop: 2, lineHeight: 18 },
+  toolDesc: { fontSize: FontSize.sm, marginTop: Spacing.half, lineHeight: 18 },
   skillIconText: { fontSize: 16 },
 
   webOnly: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.six },
@@ -1334,4 +1472,24 @@ const styles = StyleSheet.create({
   pickerName: { fontSize: FontSize.md, fontWeight: FontWeight.medium },
   pickerProvider: { fontSize: FontSize.sm },
   sep: { height: StyleSheet.hairlineWidth },
+
+  // Discard-changes confirmation dialog
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: Scrim,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.four,
+  },
+  confirmDialog: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: Radius.xl,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    padding: Spacing.four,
+    gap: Spacing.three,
+  },
+  confirmTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, textAlign: 'center' },
+  confirmMsg: { fontSize: FontSize.base, textAlign: 'center', lineHeight: 20 },
+  confirmActions: { flexDirection: 'row', gap: Spacing.two },
 });
