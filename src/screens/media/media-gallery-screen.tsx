@@ -4,7 +4,7 @@
  */
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Music, Search, Star } from 'lucide-react-native';
+import { Images, Music, Search, Star } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,7 +18,7 @@ import {
   View,
 } from 'react-native';
 
-import { Screen } from '@/components/ui';
+import { EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { MediaAsset, MediaModality, getMediaAssets, mediaFileSource } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
@@ -127,6 +127,8 @@ export function MediaGalleryScreen({ navigation }: Props) {
           })}
           <Pressable
             onPress={() => setFavOnly((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={favOnly ? 'Show all media' : 'Show favorites only'}
             style={[
               styles.chip,
               styles.favChip,
@@ -146,10 +148,15 @@ export function MediaGalleryScreen({ navigation }: Props) {
         refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={theme.accent} />}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>Nothing here yet</Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              Generated media will appear in your library.
-            </Text>
+            <EmptyState
+              icon={query || filter !== 'ALL' || favOnly ? Search : Images}
+              title={query || filter !== 'ALL' || favOnly ? 'No results' : 'Nothing here yet'}
+              subtitle={
+                query || filter !== 'ALL' || favOnly
+                  ? 'No media matches your filter.'
+                  : 'Generated media will appear in your library.'
+              }
+            />
           </View>
         }
         renderItem={({ item }) => (
@@ -168,7 +175,7 @@ export function MediaGalleryScreen({ navigation }: Props) {
             )}
             {item.isFavorite ? (
               <View style={styles.favBadge}>
-                <Star color="#fff" size={12} fill="#fff" />
+                <Star color={theme.accentForeground} size={12} fill={theme.accentForeground} />
               </View>
             ) : null}
           </Pressable>
@@ -181,7 +188,6 @@ export function MediaGalleryScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.one, padding: Spacing.four },
   emptyWrap: { flexGrow: 1 },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
   filters: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.two, gap: Spacing.two },
   searchBar: {
@@ -220,7 +226,7 @@ const styles = StyleSheet.create({
     top: 4,
     right: 4,
     backgroundColor: Scrim,
-    borderRadius: 10,
+    borderRadius: Radius.full,
     padding: 3,
   },
 });
