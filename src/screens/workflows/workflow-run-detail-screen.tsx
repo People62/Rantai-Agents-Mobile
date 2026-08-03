@@ -3,10 +3,11 @@
  * 2s while the run is still PENDING/RUNNING, then stops.
  */
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ChevronDown, ChevronRight } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,9 +15,9 @@ import {
   View,
 } from 'react-native';
 
-import { Screen } from '@/components/ui';
+import { Button, CodeBlock, Screen } from '@/components/ui';
 import { Fonts, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
-import { WorkflowRun, WorkflowStep, getWorkflowRun } from '@/lib/api';
+import { WorkflowRun, WorkflowStep, getApiUrl, getWorkflowRun } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
 import type { WorkflowStackParamList } from '@/navigation/types';
@@ -32,6 +33,15 @@ function pretty(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+/** Compact duration: "820ms" / "4.2s" / "1m 3s". */
+function fmtDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(s < 10 ? 1 : 0)}s`;
+  const m = Math.floor(s / 60);
+  return `${m}m ${Math.round(s % 60)}s`;
 }
 
 export function WorkflowRunDetailScreen({ route }: Props) {
@@ -71,6 +81,14 @@ export function WorkflowRunDetailScreen({ route }: Props) {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
+  // Auto-expand the step that is currently running so progress is visible.
+  useEffect(() => {
+    const running = run?.steps?.find((s) => s.status?.toLowerCase() === 'running');
+    if (running) {
+      setExpanded((prev) => (prev[running.stepId] ? prev : { ...prev, [running.stepId]: true }));
+    }
+  }, [run]);
+
   if (loading) {
     return (
       <Screen edges={['bottom']}>
@@ -93,6 +111,9 @@ export function WorkflowRunDetailScreen({ route }: Props) {
 
   const statusColor = runStatusColor(theme, run.status);
   const active = isRunActive(run.status);
+  const steps = run.steps ?? [];
+  const totalMs = steps.reduce((a, s) => a + (s.durationMs ?? 0), 0);
+  const totalTok = steps.reduce((a, s) => a + (s.tokenUsage?.total ?? 0), 0);
 
   return (
     <Screen padded={false} edges={['bottom']}>
@@ -112,9 +133,35 @@ export function WorkflowRunDetailScreen({ route }: Props) {
           </Text>
         </View>
 
+        {steps.length ? (
+          <Text style={[styles.summary, { color: theme.textSecondary }]}>
+            {steps.length} step{steps.length === 1 ? '' : 's'}
+            {totalMs ? ` · ${fmtDuration(totalMs)}` : ''}
+            {totalTok ? ` · ${totalTok} tokens` : ''}
+          </Text>
+        ) : null}
+
         {run.error ? (
           <View style={[styles.errorBox, { backgroundColor: `${theme.destructive}12`, borderColor: theme.destructive }]}>
             <Text style={[styles.errorText, { color: theme.destructive }]}>{run.error}</Text>
+          </View>
+        ) : null}
+
+        {/* Paused (human-in-the-loop) — mobile has no resume endpoint yet. */}
+        {run.status === 'PAUSED' ? (
+          <View style={[styles.pausedBox, { backgroundColor: `${theme.warning}14`, borderColor: theme.warning }]}>
+            <Text style={[styles.pausedTitle, { color: theme.text }]}>Waiting for input</Text>
+            <Text style={[styles.pausedText, { color: theme.textSecondary }]}>
+              This run is paused for human input (an approval or a response). Resume it from the web
+              dashboard.
+            </Text>
+            <Button
+              label="Open on web"
+              variant="outline"
+              leftIcon={<ExternalLink color={theme.text} size={16} />}
+              onPress={() => Linking.openURL(`${getApiUrl()}/dashboard/workflows/${workflowId}`)}
+              style={styles.pausedBtn}
+            />
           </View>
         ) : null}
 
@@ -154,10 +201,10 @@ export function WorkflowRunDetailScreen({ route }: Props) {
                     <Field label="Error" value={step.error} color={theme.destructive} theme={theme} />
                   ) : null}
                   {step.input !== undefined ? (
-                    <Field label="Input" value={pretty(step.input)} theme={theme} />
+                    <LabeledCode label="Input" code={pretty(step.input)} theme={theme} />
                   ) : null}
                   {step.output !== undefined ? (
-                    <Field label="Output" value={pretty(step.output)} theme={theme} />
+                    <LabeledCode label="Output" code={pretty(step.output)} theme={theme} />
                   ) : null}
                 </View>
               ) : null}
@@ -169,9 +216,7 @@ export function WorkflowRunDetailScreen({ route }: Props) {
         {!active && run.output !== undefined && run.output !== null ? (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Output</Text>
-            <View style={[styles.codeBox, { backgroundColor: theme.backgroundElement }]}>
-              <Text style={[styles.code, { color: theme.text }]}>{pretty(run.output)}</Text>
-            </View>
+            <CodeBlock code={pretty(run.output)} language="json" />
           </View>
         ) : null}
       </ScrollView>
@@ -200,6 +245,24 @@ function Field({
   );
 }
 
+/** A labelled JSON payload rendered in the shared CodeBlock (mono + copy). */
+function LabeledCode({
+  label,
+  code,
+  theme,
+}: {
+  label: string;
+  code: string;
+  theme: ReturnType<typeof useTheme>;
+}) {
+  return (
+    <View style={styles.fieldWrap}>
+      <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>{label}</Text>
+      <CodeBlock code={code || '—'} language="json" />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
@@ -214,9 +277,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: Radius.full,
   },
-  dot: { width: 8, height: 8, borderRadius: 4 },
+  dot: { width: 8, height: 8, borderRadius: Radius.full },
   badgeText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold },
   time: { fontSize: FontSize.sm },
+  summary: { fontSize: FontSize.sm, marginTop: Spacing.one },
   errorBox: {
     borderRadius: Radius.md,
     borderWidth: StyleSheet.hairlineWidth * 2,
@@ -224,6 +288,16 @@ const styles = StyleSheet.create({
     marginTop: Spacing.one,
   },
   errorText: { fontSize: FontSize.sm, fontFamily: Fonts.mono },
+  pausedBox: {
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    padding: Spacing.three,
+    marginTop: Spacing.one,
+    gap: Spacing.two,
+  },
+  pausedTitle: { fontSize: FontSize.md, fontWeight: FontWeight.bold },
+  pausedText: { fontSize: FontSize.sm, lineHeight: 19 },
+  pausedBtn: { alignSelf: 'flex-start', marginTop: Spacing.one },
   sectionTitle: { fontSize: FontSize.md, fontWeight: FontWeight.bold, marginTop: Spacing.two },
   section: { gap: Spacing.two },
   step: {

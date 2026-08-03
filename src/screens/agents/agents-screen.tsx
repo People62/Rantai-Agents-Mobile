@@ -1,57 +1,55 @@
 /**
- * Agents — list of digital employees / agents (dummy data).
+ * DigitalEmployees — placeholder for the upcoming "Digital Employees" feature
+ * (autonomous agents with an isolated workspace and graduated autonomy L1–L4).
+ *
+ * There is no mobile API for this yet, so instead of showing fake data we show
+ * an honest "coming soon" state, with a link to manage it on the web.
  */
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { Users } from 'lucide-react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 
-import { Avatar, Card, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
-import { agents } from '@/data/mock';
+import { getApiUrl } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 
 export function AgentsScreen() {
   const theme = useTheme();
 
   return (
-    <Screen padded={false} edges={['bottom']}>
-      <FlatList
-        data={agents}
-        keyExtractor={(a) => a.id}
-        contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: Spacing.three }} />}
-        renderItem={({ item }) => (
-          <Card>
-            <View style={styles.row}>
-              <Avatar name={item.name} size={44} />
-              <View style={styles.info}>
-                <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
-                <Text style={[styles.role, { color: theme.textSecondary }]}>{item.role}</Text>
+    <Screen edges={['bottom']}>
+      <View style={styles.center}>
+        <EmptyState
+          icon={Users}
+          title="Digital Employees"
+          subtitle="Autonomous AI agents that run in their own isolated workspace with graduated autonomy (L1–L4). Coming soon to mobile."
+          action={
+            <View style={styles.actions}>
+              <View style={[styles.badge, { backgroundColor: `${theme.accent}1A` }]}>
+                <Text style={[styles.badgeText, { color: theme.accent }]}>Coming soon</Text>
               </View>
-              <View style={styles.statusWrap}>
-                <View
-                  style={[
-                    styles.dot,
-                    { backgroundColor: item.status === 'active' ? '#16a34a' : theme.textSecondary },
-                  ]}
-                />
-                <Text style={[styles.status, { color: theme.textSecondary }]}>
-                  {item.status === 'active' ? 'Active' : 'Idle'}
-                </Text>
-              </View>
+              <Button
+                label="Open on web"
+                variant="outline"
+                onPress={() => Linking.openURL(`${getApiUrl()}/dashboard/digital-employees`)}
+                style={styles.webBtn}
+              />
             </View>
-          </Card>
-        )}
-      />
+          }
+        />
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  info: { flex: 1, gap: 2 },
-  name: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
-  role: { fontSize: FontSize.sm },
-  statusWrap: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
-  dot: { width: 8, height: 8, borderRadius: Radius.full },
-  status: { fontSize: FontSize.xs },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  actions: { alignItems: 'center', gap: Spacing.three, marginTop: Spacing.two },
+  badge: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: Radius.full,
+  },
+  badgeText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
+  webBtn: { minWidth: 180 },
 });
