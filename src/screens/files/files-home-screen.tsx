@@ -20,7 +20,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   KnowledgeGroup,
@@ -195,9 +195,11 @@ export function FilesHomeScreen({ navigation }: Props) {
           </>
         }
         ListEmptyComponent={
-          <Text style={[styles.muted, { color: theme.textSecondary, padding: Spacing.four }]}>
-            No knowledge bases yet. Create one with the + button.
-          </Text>
+          <EmptyState
+            icon={Layers}
+            title="No knowledge bases yet"
+            subtitle="Create one with the + button."
+          />
         }
         renderItem={({ item }) => (
           <Pressable
@@ -228,7 +230,12 @@ export function FilesHomeScreen({ navigation }: Props) {
       {/* Create KB FAB */}
       <Pressable
         onPress={() => setCreateOpen(true)}
-        style={({ pressed }) => [styles.fab, { backgroundColor: theme.accent, opacity: pressed ? 0.9 : 1 }]}>
+        accessibilityRole="button"
+        accessibilityLabel="Create knowledge base"
+        style={({ pressed }) => [
+          styles.fab,
+          { backgroundColor: theme.accent, shadowColor: theme.shadow, opacity: pressed ? 0.9 : 1 },
+        ]}>
         <FolderPlus color={theme.accentForeground} size={24} />
       </Pressable>
 
@@ -353,8 +360,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
   iconBox: { width: 40, height: 40, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  dot: { width: 12, height: 12, borderRadius: 6, marginHorizontal: 14 },
-  rowText: { flex: 1, gap: 2 },
+  dot: { width: 12, height: 12, borderRadius: Radius.full, marginHorizontal: 14 },
+  rowText: { flex: 1, gap: Spacing.half },
   name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold },
   sub: { fontSize: FontSize.sm },
   fab: {
@@ -367,7 +374,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
-    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
@@ -400,7 +406,7 @@ const styles = StyleSheet.create({
   dialogActions: { flexDirection: 'row', gap: Spacing.two },
   colorLabel: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
   swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  swatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
+  swatch: { width: 32, height: 32, borderRadius: Radius.full, borderWidth: 2 },
 
   // themed delete
   textCenter: { textAlign: 'center' },

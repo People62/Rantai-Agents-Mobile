@@ -24,7 +24,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   KnowledgeCategory,
@@ -229,8 +229,17 @@ export function DocumentsScreen({ route, navigation }: Props) {
         enhanced: upEnhanced,
       });
       await load();
-    } catch {
-      Alert.alert('Upload failed', 'Could not process the document. Try a smaller or simpler file.');
+    } catch (e) {
+      const status = (e as { status?: number })?.status;
+      const msg =
+        status === 413
+          ? 'This file is too large or exceeds your storage quota.'
+          : status === 422
+            ? 'We could not extract text from this file. Try a clearer scan or a different format.'
+            : status === 403
+              ? "You don't have permission to upload here."
+              : 'Could not process the document. Try a smaller or simpler file.';
+      Alert.alert('Upload failed', msg);
     } finally {
       setUploading(false);
     }
@@ -239,7 +248,12 @@ export function DocumentsScreen({ route, navigation }: Props) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={openDialog} hitSlop={8} style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
+        <Pressable
+          onPress={openDialog}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Upload document"
+          style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
           <Plus color={theme.accent} size={24} />
         </Pressable>
       ),
@@ -294,6 +308,8 @@ export function DocumentsScreen({ route, navigation }: Props) {
           {categories.length ? (
             <Pressable
               onPress={() => setCatPickerOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={cat ? `Category filter: ${cat}` : 'Filter by category'}
               style={[
                 styles.filterBtn,
                 { backgroundColor: theme.backgroundElement, borderColor: cat ? theme.accent : theme.border },
@@ -317,12 +333,13 @@ export function DocumentsScreen({ route, navigation }: Props) {
         refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={theme.accent} />}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              {query || cat ? 'No results' : 'No documents yet'}
-            </Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              {query || cat ? 'No documents match your filter.' : 'Upload one with the + button.'}
-            </Text>
+            <EmptyState
+              icon={query || cat ? Search : FileText}
+              title={query || cat ? 'No results' : 'No documents yet'}
+              subtitle={
+                query || cat ? 'No documents match your filter.' : 'Upload one with the + button.'
+              }
+            />
           </View>
         }
         ItemSeparatorComponent={() => <View style={[styles.sep, { backgroundColor: theme.border }]} />}
@@ -561,7 +578,8 @@ export function DocumentsScreen({ route, navigation }: Props) {
             <ActivityIndicator color={theme.accent} size="large" />
             <Text style={[styles.overlayText, { color: theme.text }]}>Processing document…</Text>
             <Text style={[styles.overlaySub, { color: theme.textSecondary }]}>
-              Extracting text & building the index. This can take a while.
+              Extracting text & building the index — large or scanned files can take a while. Keep
+              the screen open.
             </Text>
           </View>
         </View>
@@ -612,7 +630,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.one, padding: Spacing.four },
   emptyWrap: { flexGrow: 1 },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
   filters: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.two, gap: Spacing.two },
   searchBar: {
@@ -639,7 +656,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: Spacing.four, paddingTop: Spacing.one },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.three, borderRadius: Radius.md },
   fileIcon: { width: 40, height: 40, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  rowText: { flex: 1, gap: 2 },
+  rowText: { flex: 1, gap: Spacing.half },
   title: { fontSize: FontSize.md, fontWeight: FontWeight.semibold },
   sub: { fontSize: FontSize.sm },
   sep: { height: StyleSheet.hairlineWidth },
@@ -676,7 +693,7 @@ const styles = StyleSheet.create({
   sheetActions: { flexDirection: 'row', gap: Spacing.two, padding: Spacing.four },
 
   // processing overlay
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  overlay: { flex: 1, backgroundColor: Scrim, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   overlayCard: {
     width: '100%', maxWidth: 320, borderRadius: Radius.xl, borderWidth: StyleSheet.hairlineWidth * 2,
     padding: Spacing.five, alignItems: 'center', gap: Spacing.two,
