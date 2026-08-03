@@ -5,7 +5,7 @@
  */
 import { pick, types } from '@react-native-documents/picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Check, ChevronDown, ImagePlus, Sparkles, X } from 'lucide-react-native';
+import { Check, ChevronDown, ImagePlus, Music, Sparkles, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -27,6 +27,7 @@ import { Button, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   GenerateMediaInput,
+  MediaAsset,
   MediaModality,
   MediaModel,
   generateMedia,
@@ -106,6 +107,7 @@ export function MediaGenerateScreen({ route, navigation }: Props) {
 
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<MediaAsset[]>([]);
 
   // Pre-add a reference passed from an asset's "use as reference".
   useEffect(() => {
@@ -157,6 +159,7 @@ export function MediaGenerateScreen({ route, navigation }: Props) {
     if (!token || !modelId || !prompt.trim() || generating) return;
     setGenerating(true);
     setError(null);
+    setResults([]);
     // Style presets are prompt hints, not provider params (same as the web).
     const styledPrompt = style
       ? `${prompt.trim()}, ${STYLE_SUFFIX[style] ?? style}`
@@ -174,7 +177,11 @@ export function MediaGenerateScreen({ route, navigation }: Props) {
     try {
       const job = await generateMedia(token, input);
       if (job.status === 'SUCCEEDED' && job.assets.length) {
-        navigation.navigate('MediaAsset', { id: job.assets[0].id });
+        setResults(job.assets);
+        // Single result → jump straight in; a batch → show all in a result strip.
+        if (job.assets.length === 1) {
+          navigation.navigate('MediaAsset', { id: job.assets[0].id });
+        }
       } else {
         setError(job.errorMessage || 'Generation did not return any output.');
       }
@@ -347,14 +354,18 @@ export function MediaGenerateScreen({ route, navigation }: Props) {
                       <Image source={mediaFileSource(token!, id)} style={styles.refImg} />
                       <Pressable
                         onPress={() => setReferences((prev) => prev.filter((r) => r !== id))}
+                        accessibilityRole="button"
+                        accessibilityLabel="Remove reference"
                         style={[styles.refRemove, { backgroundColor: theme.destructive }]}>
-                        <X color="#fff" size={12} />
+                        <X color={theme.accentForeground} size={12} />
                       </Pressable>
                     </View>
                   ))}
                   {references.length < 4 ? (
                     <Pressable
                       onPress={addReference}
+                      accessibilityRole="button"
+                      accessibilityLabel="Add reference image"
                       style={[styles.refAdd, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
                       <ImagePlus color={theme.textSecondary} size={22} />
                     </Pressable>
@@ -400,9 +411,38 @@ export function MediaGenerateScreen({ route, navigation }: Props) {
             style={styles.generateBtn}
           />
           {generating ? (
-            <Text style={[styles.hint, { color: theme.textSecondary }]}>
-              This can take a little while — keep the screen open.
-            </Text>
+            <View style={[styles.genPlaceholder, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <ActivityIndicator color={theme.accent} />
+              <Text style={[styles.hint, { color: theme.textSecondary }]}>
+                Generating your {modality === 'IMAGE' ? 'image' : 'audio'}… keep the screen open.
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Result strip — a batch (count > 1) stays here so every output is reachable. */}
+          {results.length > 0 ? (
+            <View>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
+                Latest results ({results.length})
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.resultRow}>
+                {results.map((a) => (
+                  <Pressable
+                    key={a.id}
+                    onPress={() => navigation.navigate('MediaAsset', { id: a.id })}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open result">
+                    {a.modality === 'IMAGE' ? (
+                      <Image source={mediaFileSource(token!, a.id)} style={styles.resultThumb} />
+                    ) : (
+                      <View style={[styles.resultThumb, styles.resultAudio, { backgroundColor: theme.backgroundElement }]}>
+                        <Music color={theme.textSecondary} size={22} />
+                      </View>
+                    )}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
           ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -478,7 +518,7 @@ const styles = StyleSheet.create({
     right: -6,
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -491,6 +531,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   error: { fontSize: FontSize.sm },
+  genPlaceholder: {
+    minHeight: 120,
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    padding: Spacing.four,
+  },
+  resultRow: { gap: Spacing.two, paddingVertical: Spacing.one },
+  resultThumb: { width: 88, height: 88, borderRadius: Radius.md },
+  resultAudio: { alignItems: 'center', justifyContent: 'center' },
   generateBtn: { marginTop: Spacing.one },
   hint: { fontSize: FontSize.xs, textAlign: 'center' },
   backdrop: { flex: 1, backgroundColor: Scrim, justifyContent: 'flex-end' },

@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   PermissionsAndroid,
   Platform,
   Pressable,
@@ -22,8 +23,8 @@ import {
 } from 'react-native';
 import Video from 'react-native-video';
 
-import { Screen } from '@/components/ui';
-import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Button, Screen } from '@/components/ui';
+import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   MediaAsset,
   deleteMediaAsset,
@@ -50,6 +51,7 @@ export function MediaAssetScreen({ route, navigation }: Props) {
   const [asset, setAsset] = useState<MediaAsset | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Audio player state
   const [paused, setPaused] = useState(true);
@@ -109,25 +111,40 @@ export function MediaAssetScreen({ route, navigation }: Props) {
     }
   }
 
-  async function doDelete() {
+  async function saveAudio() {
     if (!token || !asset || busy) return;
-    Alert.alert('Delete asset?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          setBusy(true);
-          try {
-            await deleteMediaAsset(token, asset.id);
-            navigation.goBack();
-          } catch {
-            Alert.alert('Failed', 'Could not delete the asset.');
-            setBusy(false);
-          }
-        },
-      },
-    ]);
+    setBusy(true);
+    try {
+      const src = mediaFileSource(token, asset.id, true);
+      const ext = asset.mimeType.split('/')[1]?.split(';')[0] ?? 'wav';
+      const dir =
+        Platform.OS === 'android' ? RNFS.DownloadDirectoryPath : RNFS.DocumentDirectoryPath;
+      await RNFS.downloadFile({ fromUrl: src.uri, toFile: `${dir}/rantai-${asset.id}.${ext}` })
+        .promise;
+      Alert.alert(
+        'Saved',
+        Platform.OS === 'android'
+          ? 'Audio saved to your Downloads folder.'
+          : 'Audio saved to the Files app.',
+      );
+    } catch {
+      Alert.alert('Save failed', 'Could not save the audio.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!token || !asset || busy) return;
+    setBusy(true);
+    try {
+      await deleteMediaAsset(token, asset.id);
+      setDeleteOpen(false);
+      navigation.goBack();
+    } catch {
+      Alert.alert('Failed', 'Could not delete the asset.');
+      setBusy(false);
+    }
   }
 
   if (loading) {
@@ -158,7 +175,11 @@ export function MediaAssetScreen({ route, navigation }: Props) {
         {isImage ? (
           <Image
             source={mediaFileSource(token!, asset.id)}
-            style={[styles.image, asset.width && asset.height ? { aspectRatio: asset.width / asset.height } : null]}
+            style={[
+              styles.image,
+              { backgroundColor: theme.backgroundElement },
+              asset.width && asset.height ? { aspectRatio: asset.width / asset.height } : null,
+            ]}
             resizeMode="contain"
           />
         ) : (
@@ -177,6 +198,8 @@ export function MediaAssetScreen({ route, navigation }: Props) {
             />
             <Pressable
               onPress={() => setPaused((p) => !p)}
+              accessibilityRole="button"
+              accessibilityLabel={paused ? 'Play audio' : 'Pause audio'}
               style={[styles.playBtn, { backgroundColor: theme.accent }]}>
               {paused ? <Play color={theme.accentForeground} size={30} /> : <Pause color={theme.accentForeground} size={30} />}
             </Pressable>
@@ -207,9 +230,12 @@ export function MediaAssetScreen({ route, navigation }: Props) {
             onPress={toggleFavorite}
             theme={theme}
           />
-          {isImage ? (
-            <Action icon={<Download color={theme.text} size={22} />} label="Save" onPress={saveToGallery} theme={theme} />
-          ) : null}
+          <Action
+            icon={<Download color={theme.text} size={22} />}
+            label="Save"
+            onPress={isImage ? saveToGallery : saveAudio}
+            theme={theme}
+          />
           {isImage ? (
             <Action
               icon={<ImageUp color={theme.text} size={22} />}
@@ -218,9 +244,44 @@ export function MediaAssetScreen({ route, navigation }: Props) {
               theme={theme}
             />
           ) : null}
-          <Action icon={<Trash2 color={theme.destructive} size={22} />} label="Delete" onPress={doDelete} theme={theme} destructive />
+          <Action icon={<Trash2 color={theme.destructive} size={22} />} label="Delete" onPress={() => setDeleteOpen(true)} theme={theme} destructive />
         </View>
       </ScrollView>
+
+      {/* Delete confirmation */}
+      <Modal
+        visible={deleteOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => (busy ? undefined : setDeleteOpen(false))}>
+        <Pressable style={styles.backdrop} onPress={() => (busy ? undefined : setDeleteOpen(false))}>
+          <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <View style={[styles.dangerIcon, { backgroundColor: `${theme.destructive}1A` }]}>
+              <Trash2 color={theme.destructive} size={26} />
+            </View>
+            <Text style={[styles.dialogTitle, { color: theme.text }]}>Delete asset?</Text>
+            <Text style={[styles.dialogMessage, { color: theme.textSecondary }]}>
+              This asset will be permanently deleted. This action cannot be undone.
+            </Text>
+            <View style={styles.dialogActions}>
+              <Button
+                label="Cancel"
+                variant="outline"
+                onPress={() => setDeleteOpen(false)}
+                disabled={busy}
+                style={styles.flex}
+              />
+              <Button
+                label="Delete"
+                variant="destructive"
+                onPress={confirmDelete}
+                loading={busy}
+                style={styles.flex}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -247,9 +308,10 @@ function Action({
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   content: { padding: Spacing.four, gap: Spacing.four },
-  image: { width: '100%', aspectRatio: 1, borderRadius: Radius.md, backgroundColor: '#00000010' },
+  image: { width: '100%', aspectRatio: 1, borderRadius: Radius.md },
   audioBox: {
     borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
@@ -258,14 +320,42 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   hiddenVideo: { width: 0, height: 0 },
-  playBtn: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
+  playBtn: { width: 64, height: 64, borderRadius: Radius.full, alignItems: 'center', justifyContent: 'center' },
   progressWrap: { alignSelf: 'stretch', gap: Spacing.one },
-  progressTrack: { height: 4, borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: 4, borderRadius: 2 },
+  progressTrack: { height: 4, borderRadius: Radius.full, overflow: 'hidden' },
+  progressFill: { height: 4, borderRadius: Radius.full },
   times: { flexDirection: 'row', justifyContent: 'space-between' },
   time: { fontSize: FontSize.xs },
   prompt: { fontSize: FontSize.base, lineHeight: 20 },
   actions: { flexDirection: 'row', justifyContent: 'space-around', paddingTop: Spacing.two },
   action: { alignItems: 'center', gap: Spacing.one, minWidth: 64 },
   actionLabel: { fontSize: FontSize.xs, fontWeight: FontWeight.medium },
+
+  // Delete confirmation dialog
+  backdrop: {
+    flex: 1,
+    backgroundColor: Scrim,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.four,
+  },
+  dialog: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: Radius.xl,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    padding: Spacing.four,
+    gap: Spacing.three,
+    alignItems: 'center',
+  },
+  dangerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialogTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, textAlign: 'center' },
+  dialogMessage: { fontSize: FontSize.base, textAlign: 'center', lineHeight: 20 },
+  dialogActions: { flexDirection: 'row', gap: Spacing.two, alignSelf: 'stretch' },
 });
