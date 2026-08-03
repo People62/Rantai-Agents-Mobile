@@ -4,6 +4,7 @@
  * visual language instead of ad-hoc one-liners.
  */
 import type { LucideIcon } from 'lucide-react-native';
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
@@ -13,10 +14,13 @@ export function EmptyState({
   icon: Icon,
   title,
   subtitle,
+  action,
 }: {
   icon: LucideIcon;
   title: string;
   subtitle?: string;
+  /** Optional call-to-action (e.g. a Button) rendered below the text. */
+  action?: ReactNode;
 }) {
   const theme = useTheme();
   return (
@@ -28,6 +32,7 @@ export function EmptyState({
       {subtitle ? (
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
       ) : null}
+      {action}
     </View>
   );
 }
