@@ -25,6 +25,8 @@ export const Colors = {
     accentForeground: '#FFFFFF',
     border: '#DBD7D0',
     destructive: '#E7000B',
+    success: '#16A34A', // positive / active status
+    warning: '#D97706', // caution / paused status
     // Component token: outgoing chat bubble. Currently equals `accent`, but kept
     // separate so "my message" can diverge from links/buttons without a refactor.
     chatBubbleMine: '#0071DF',
@@ -54,6 +56,8 @@ export const Colors = {
     accentForeground: '#FFFFFF',
     border: '#3A3A3C',
     destructive: '#82181A',
+    success: '#22C55E',
+    warning: '#F59E0B',
     chatBubbleMine: '#0071DF',
     chatBubbleMineText: '#FFFFFF',
     shadow: '#000000',
