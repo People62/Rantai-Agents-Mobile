@@ -113,7 +113,12 @@ export function DocumentDetailScreen({ route, navigation }: Props) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={openDelete} hitSlop={8} style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
+        <Pressable
+          onPress={openDelete}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Delete document"
+          style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
           <Trash2 color={theme.destructive} size={22} />
         </Pressable>
       ),
@@ -167,7 +172,9 @@ export function DocumentDetailScreen({ route, navigation }: Props) {
               setTitle(doc.title);
               setEditOpen(true);
             }}
-            hitSlop={8}>
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Edit title">
             <Pencil color={theme.textSecondary} size={18} />
           </Pressable>
         </View>
@@ -206,7 +213,11 @@ export function DocumentDetailScreen({ route, navigation }: Props) {
         {view === 'content' ? (
           <>
             {isImage ? (
-              <Image source={knowledgeFileSource(token!, doc.id)} style={styles.image} resizeMode="contain" />
+              <Image
+                source={knowledgeFileSource(token!, doc.id)}
+                style={[styles.image, { backgroundColor: theme.backgroundElement }]}
+                resizeMode="contain"
+              />
             ) : null}
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Content</Text>
             <View style={[styles.contentBox, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -407,7 +418,7 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   tag: { paddingHorizontal: Spacing.two, paddingVertical: 3, borderRadius: Radius.full },
   tagText: { fontSize: FontSize.xs, fontWeight: FontWeight.medium },
-  image: { width: '100%', aspectRatio: 1, borderRadius: Radius.md, backgroundColor: '#00000010' },
+  image: { width: '100%', aspectRatio: 1, borderRadius: Radius.md },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.two },
   sectionTitle: { fontSize: FontSize.md, fontWeight: FontWeight.bold },
   contentBox: { borderRadius: Radius.md, borderWidth: StyleSheet.hairlineWidth * 2, padding: Spacing.three },
