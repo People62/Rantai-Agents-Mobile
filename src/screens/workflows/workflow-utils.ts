@@ -9,18 +9,25 @@ import type {
   WorkflowStatus,
 } from '@/lib/api';
 
-type StatusTheme = { accent: string; destructive: string; textSecondary: string };
+type StatusTheme = {
+  accent: string;
+  destructive: string;
+  textSecondary: string;
+  success: string;
+  warning: string;
+};
 
-// The theme has no dedicated success/warning tokens; use fixed literals.
-const GREEN = '#16A34A';
-const AMBER = '#D97706';
+// Decorative node-category palette (theme-invariant, non-semantic).
+const NODE_AI = '#8B5CF6';
+const NODE_INTEGRATION = '#0D9488';
+const NODE_HUMAN = '#DB2777';
 
 export function workflowStatusColor(theme: StatusTheme, status: WorkflowStatus): string {
   switch (status) {
     case 'ACTIVE':
-      return GREEN;
+      return theme.success;
     case 'PAUSED':
-      return AMBER;
+      return theme.warning;
     case 'ARCHIVED':
       return theme.textSecondary;
     default:
@@ -31,14 +38,14 @@ export function workflowStatusColor(theme: StatusTheme, status: WorkflowStatus):
 export function runStatusColor(theme: StatusTheme, status: RunStatus): string {
   switch (status) {
     case 'COMPLETED':
-      return GREEN;
+      return theme.success;
     case 'FAILED':
       return theme.destructive;
     case 'RUNNING':
     case 'PENDING':
       return theme.accent;
     case 'PAUSED':
-      return AMBER;
+      return theme.warning;
     default:
       return theme.textSecondary;
   }
@@ -47,7 +54,7 @@ export function runStatusColor(theme: StatusTheme, status: RunStatus): string {
 /** A step's status ("success"/"failed"/"running"/…) → color. */
 export function stepStatusColor(theme: StatusTheme, status: string): string {
   const s = status.toLowerCase();
-  if (s === 'success' || s === 'completed') return GREEN;
+  if (s === 'success' || s === 'completed') return theme.success;
   if (s === 'failed' || s === 'error') return theme.destructive;
   if (s === 'running' || s === 'pending') return theme.accent;
   return theme.textSecondary;
@@ -92,12 +99,12 @@ export function nodeType(n: WorkflowNode): string {
 export function nodeAccent(type: string, theme: StatusTheme): string {
   const t = (type || '').toLowerCase();
   if (t.startsWith('trigger')) return theme.accent;
-  if (t === 'llm' || t === 'agent' || t === 'stream_output') return '#8B5CF6'; // AI
+  if (t === 'llm' || t === 'agent' || t === 'stream_output') return NODE_AI;
   if (['condition', 'switch', 'loop', 'parallel', 'merge', 'error_handler', 'sub_workflow'].includes(t))
-    return AMBER; // flow control
-  if (['transform', 'filter', 'aggregate', 'output_parser'].includes(t)) return GREEN; // data
-  if (['rag_search', 'database', 'storage'].includes(t)) return '#0D9488'; // integration
-  if (['human_input', 'approval', 'handoff'].includes(t)) return '#DB2777'; // human
+    return theme.warning; // flow control
+  if (['transform', 'filter', 'aggregate', 'output_parser'].includes(t)) return theme.success; // data
+  if (['rag_search', 'database', 'storage'].includes(t)) return NODE_INTEGRATION;
+  if (['human_input', 'approval', 'handoff'].includes(t)) return NODE_HUMAN;
   return theme.textSecondary;
 }
 

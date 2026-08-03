@@ -5,7 +5,7 @@
  */
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Search } from 'lucide-react-native';
+import { GitBranch, Search } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,7 +19,7 @@ import {
   View,
 } from 'react-native';
 
-import { Screen } from '@/components/ui';
+import { EmptyState, Screen } from '@/components/ui';
 import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { Workflow, WorkflowStatus, getWorkflows } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
@@ -28,6 +28,11 @@ import type { WorkflowStackParamList } from '@/navigation/types';
 import { workflowStatusColor } from './workflow-utils';
 
 type Props = NativeStackScreenProps<WorkflowStackParamList, 'WorkflowList'>;
+
+/** "TASK" → "Task", "AUTOMATION" → "Automation". */
+function categoryLabel(cat: string): string {
+  return cat.charAt(0) + cat.slice(1).toLowerCase();
+}
 
 const FILTERS: Array<{ label: string; value: WorkflowStatus | 'ALL' }> = [
   { label: 'All', value: 'ALL' },
@@ -161,14 +166,15 @@ export function WorkflowListScreen({ navigation }: Props) {
         }
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              {query || filter !== 'ALL' ? 'No results' : 'No workflows yet'}
-            </Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              {query || filter !== 'ALL'
-                ? 'No workflows match your filter.'
-                : 'Workflows are built on the web dashboard, then run & monitored here.'}
-            </Text>
+            <EmptyState
+              icon={query || filter !== 'ALL' ? Search : GitBranch}
+              title={query || filter !== 'ALL' ? 'No results' : 'No workflows yet'}
+              subtitle={
+                query || filter !== 'ALL'
+                  ? 'No workflows match your filter.'
+                  : 'Workflows are built on the web dashboard, then run & monitored here.'
+              }
+            />
           </View>
         }
         ItemSeparatorComponent={() => (
@@ -202,11 +208,14 @@ export function WorkflowListScreen({ navigation }: Props) {
                   </Text>
                 </View>
               </View>
-              <Text style={[styles.preview, { color: theme.textSecondary }]} numberOfLines={1}>
-                {item.description?.trim() ||
-                  `${item.category} · ${item._count?.runs ?? 0} run${
-                    (item._count?.runs ?? 0) === 1 ? '' : 's'
-                  }`}
+              {item.description?.trim() ? (
+                <Text style={[styles.preview, { color: theme.textSecondary }]} numberOfLines={1}>
+                  {item.description.trim()}
+                </Text>
+              ) : null}
+              <Text style={[styles.meta, { color: theme.textSecondary }]} numberOfLines={1}>
+                {categoryLabel(item.category)} · {item.nodes?.length ?? 0} nodes ·{' '}
+                {item._count?.runs ?? 0} run{(item._count?.runs ?? 0) === 1 ? '' : 's'}
               </Text>
             </View>
           </Pressable>
@@ -239,23 +248,23 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
   chipText: { fontSize: FontSize.sm, fontWeight: FontWeight.medium },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
   list: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
-  row: { paddingVertical: Spacing.three, borderRadius: 12 },
-  rowText: { gap: 2, marginHorizontal: Spacing.two },
+  row: { paddingVertical: Spacing.three, borderRadius: Radius.lg },
+  rowText: { gap: Spacing.half, marginHorizontal: Spacing.two },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, flex: 1 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.one,
     paddingHorizontal: Spacing.two,
-    paddingVertical: 2,
+    paddingVertical: Spacing.half,
     borderRadius: Radius.full,
   },
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  dot: { width: 6, height: 6, borderRadius: Radius.full },
   badgeText: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold },
   preview: { fontSize: FontSize.base },
+  meta: { fontSize: FontSize.xs },
   sep: { height: StyleSheet.hairlineWidth },
 });
