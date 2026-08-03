@@ -46,15 +46,3 @@ export const agents: Agent[] = [
   { id: 'a3', name: 'Cira', role: 'Research Analyst', status: 'active' },
 ];
 
-export type KnowledgeFile = {
-  id: string;
-  name: string;
-  size: string;
-  type: string;
-};
-
-export const knowledgeFiles: KnowledgeFile[] = [
-  { id: 'f1', name: 'Product Guide 2026.pdf', size: '2.4 MB', type: 'PDF' },
-  { id: 'f2', name: 'Customer FAQ.docx', size: '640 KB', type: 'DOCX' },
-  { id: 'f3', name: 'Q2 Sales Data.csv', size: '1.1 MB', type: 'CSV' },
-];

@@ -21,7 +21,6 @@ import { FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { AgentsScreen } from '@/screens/agents/agents-screen';
 import { HomeScreen } from '@/screens/home/home-screen';
-import { KnowledgeScreen } from '@/screens/knowledge/knowledge-screen';
 import { MarketplaceScreen } from '@/screens/marketplace/marketplace-screen';
 import { NewChatScreen } from '@/screens/chat/new-chat-screen';
 import { makePlaceholder } from '@/screens/placeholder';
@@ -193,11 +192,6 @@ export function AppDrawer() {
         name="MediaStudio"
         component={MediaStudioScreen}
         options={{ title: 'Media Studio', drawerIcon: ({ color }) => <Clapperboard color={color} size={22} /> }}
-      />
-      <Drawer.Screen
-        name="Files"
-        component={KnowledgeScreen}
-        options={{ title: 'Files', drawerIcon: ({ color }) => <Folder color={color} size={22} /> }}
       />
       <Drawer.Screen
         name="Marketplace"
