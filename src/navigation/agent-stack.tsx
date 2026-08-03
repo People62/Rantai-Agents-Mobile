@@ -38,6 +38,8 @@ export function AgentStack() {
                 navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.openDrawer()
               }
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Open menu"
               style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
               <Menu color={theme.text} size={24} />
             </Pressable>
@@ -46,6 +48,8 @@ export function AgentStack() {
             <Pressable
               onPress={() => navigation.navigate('AgentEditor')}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Create agent"
               style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
               <Plus color={theme.accent} size={24} />
             </Pressable>

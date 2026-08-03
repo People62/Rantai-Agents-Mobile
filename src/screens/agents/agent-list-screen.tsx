@@ -5,7 +5,7 @@
  */
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Copy, Pencil, Search, Star, Trash2 } from 'lucide-react-native';
+import { Bot, Copy, Pencil, Search, Star, Trash2 } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,7 +21,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   Agent,
@@ -242,21 +242,24 @@ export function AgentListScreen({ navigation }: Props) {
         }
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              {query ? 'No results' : 'No agents yet'}
-            </Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              {query
-                ? `No agents match "${query}".`
-                : 'Create your first agent with the + button.'}
-            </Text>
-            {!query ? (
-              <Button
-                label="Create agent"
-                onPress={() => navigation.navigate('AgentEditor')}
-                style={styles.emptyBtn}
-              />
-            ) : null}
+            <EmptyState
+              icon={query ? Search : Bot}
+              title={query ? 'No results' : 'No agents yet'}
+              subtitle={
+                query
+                  ? `No agents match "${query}".`
+                  : 'Create your first agent with the + button.'
+              }
+              action={
+                query ? undefined : (
+                  <Button
+                    label="Create agent"
+                    onPress={() => navigation.navigate('AgentEditor')}
+                    style={styles.emptyBtn}
+                  />
+                )
+              }
+            />
           </View>
         }
         ItemSeparatorComponent={() => (
@@ -414,7 +417,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
   searchInput: { flex: 1, fontSize: FontSize.md, padding: 0 },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
   list: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
 
@@ -437,15 +439,15 @@ const styles = StyleSheet.create({
   tplEmoji: { fontSize: 26 },
   tplName: { fontSize: FontSize.md, fontWeight: FontWeight.semibold },
   tplDesc: { fontSize: FontSize.sm, lineHeight: 18, minHeight: 54 },
-  tplTags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, marginTop: 2 },
-  tplTag: { paddingHorizontal: Spacing.two, paddingVertical: 2, borderRadius: Radius.full },
+  tplTags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, marginTop: Spacing.half },
+  tplTag: { paddingHorizontal: Spacing.two, paddingVertical: Spacing.half, borderRadius: Radius.full },
   tplTagText: { fontSize: FontSize.xs, fontWeight: FontWeight.medium },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
     paddingVertical: Spacing.three,
-    borderRadius: 12,
+    borderRadius: Radius.lg,
   },
   avatar: {
     width: 44,
@@ -455,7 +457,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarEmoji: { fontSize: 22 },
-  rowText: { flex: 1, gap: 2 },
+  rowText: { flex: 1, gap: Spacing.half },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, flexShrink: 1 },
   badge: {
@@ -463,7 +465,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     paddingHorizontal: Spacing.two,
-    paddingVertical: 2,
+    paddingVertical: Spacing.half,
     borderRadius: Radius.full,
   },
   badgeText: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold },
