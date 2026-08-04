@@ -41,6 +41,11 @@ export type MediaStackParamList = {
   MediaAsset: { id: string };
 };
 
+export type AdminStackParamList = {
+  AdminDashboard: undefined;
+  AdminChannel: { channel: import('@/lib/api').AdminChannel };
+};
+
 export type FilesStackParamList = {
   FilesHome: undefined;
   /** Documents list; scoped to a KB group when `groupId` is set. */
@@ -72,6 +77,7 @@ export type DrawerParamList = {
   Marketplace: undefined;
   DigitalEmployees: undefined;
   Settings: NavigatorScreenParams<SettingsStackParamList>;
+  Admin: NavigatorScreenParams<AdminStackParamList>;
 };
 
 export type RootStackParamList = {

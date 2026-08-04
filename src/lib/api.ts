@@ -624,6 +624,65 @@ export async function updateFeature(
 }
 
 // ============================================================
+// Admin console — /api/mobile/admin (platform admin only)
+// ============================================================
+
+export interface AdminChannelStat {
+  channel: string
+  count: number
+  enabled: boolean
+}
+
+/** Platform admin dashboard stats (customer-support metrics). */
+export interface AdminStats {
+  totalConversations: number
+  activeConversations: number
+  resolvedToday: number
+  avgResponseTime: string
+  channelStats: AdminChannelStat[]
+}
+
+/** Admin dashboard stats — GET /api/mobile/admin/stats. */
+export async function getAdminStats(token: string): Promise<AdminStats> {
+  const res = await authFetch("/api/mobile/admin/stats", token)
+  return res.json()
+}
+
+/** One communication channel's settings. */
+export interface AdminChannel {
+  id: string | null
+  channel: string
+  enabled: boolean
+  isPrimary: boolean
+  config: Record<string, unknown>
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+/** Communication channels — GET /api/mobile/admin/channels. */
+export async function getAdminChannels(token: string): Promise<AdminChannel[]> {
+  const res = await authFetch("/api/mobile/admin/channels", token)
+  return res.json()
+}
+
+/** Enable / set-primary / configure one channel — PUT /api/mobile/admin/channels. */
+export async function updateAdminChannel(
+  token: string,
+  input: {
+    channel: string
+    enabled?: boolean
+    isPrimary?: boolean
+    config?: Record<string, unknown>
+  },
+): Promise<AdminChannel> {
+  const res = await authFetch("/api/mobile/admin/channels", token, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+// ============================================================
 // Credentials — /api/mobile/credentials (secrets encrypted server-side)
 // ============================================================
 
