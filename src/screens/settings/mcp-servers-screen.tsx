@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   ApiError,
@@ -127,6 +127,8 @@ export function McpServersScreen({ navigation }: Props) {
         <Pressable
           onPress={openCreate}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Add MCP server"
           style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
           <Plus color={theme.accent} size={24} />
         </Pressable>
@@ -234,12 +236,12 @@ export function McpServersScreen({ navigation }: Props) {
         ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Server color={theme.textSecondary} size={32} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No MCP servers</Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              Connect a Model Context Protocol server to add tools.
-            </Text>
-            <Button label="Add server" onPress={openCreate} style={styles.emptyBtn} />
+            <EmptyState
+              icon={Server}
+              title="No MCP servers"
+              subtitle="Connect a Model Context Protocol server to add tools."
+              action={<Button label="Add server" onPress={openCreate} style={styles.emptyBtn} />}
+            />
           </View>
         }
         renderItem={({ item }) => (
@@ -346,7 +348,7 @@ export function McpServersScreen({ navigation }: Props) {
                   <View style={styles.enabledRow}>
                     <Text style={[styles.label, { color: theme.textSecondary, marginTop: 0 }]}>Enabled</Text>
                     <Switch value={enabled} onValueChange={setEnabled}
-                      trackColor={{ true: theme.accent, false: theme.border }} thumbColor="#fff" />
+                      trackColor={{ true: theme.accent, false: theme.border }} thumbColor={theme.accentForeground} />
                   </View>
                 ) : null}
 
@@ -407,7 +409,7 @@ function PairEditor({
           <TextInput value={p.value} onChangeText={(v) => set(i, { value: v })} placeholder="value"
             placeholderTextColor={theme.textSecondary} autoCapitalize="none" autoCorrect={false} secureTextEntry
             style={[styles.input, styles.pairInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]} />
-          <Pressable onPress={() => onChange(pairs.filter((_, idx) => idx !== i))} hitSlop={6} style={styles.pairRemove}>
+          <Pressable onPress={() => onChange(pairs.filter((_, idx) => idx !== i))} hitSlop={6} accessibilityRole="button" accessibilityLabel="Remove" style={styles.pairRemove}>
             <X color={theme.textSecondary} size={16} />
           </Pressable>
         </View>
@@ -424,7 +426,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.two, padding: Spacing.four },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   emptyBtn: { marginTop: Spacing.three, minWidth: 180 },
   emptyWrap: { flexGrow: 1 },
   list: { padding: Spacing.four },

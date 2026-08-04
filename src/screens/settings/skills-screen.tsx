@@ -22,7 +22,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   ApiError,
@@ -101,7 +101,7 @@ export function SkillsScreen({ navigation }: Props) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={openCreate} hitSlop={8} style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
+        <Pressable onPress={openCreate} hitSlop={8} accessibilityRole="button" accessibilityLabel="Create skill" style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
           <Plus color={theme.accent} size={24} />
         </Pressable>
       ),
@@ -195,12 +195,12 @@ export function SkillsScreen({ navigation }: Props) {
         ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Sparkles color={theme.textSecondary} size={32} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No skills</Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              Create a reusable instruction skill for your agents.
-            </Text>
-            <Button label="Create skill" onPress={openCreate} style={styles.emptyBtn} />
+            <EmptyState
+              icon={Sparkles}
+              title="No skills"
+              subtitle="Create a reusable instruction skill for your agents."
+              action={<Button label="Create skill" onPress={openCreate} style={styles.emptyBtn} />}
+            />
           </View>
         }
         renderItem={({ item }) => (
@@ -217,7 +217,7 @@ export function SkillsScreen({ navigation }: Props) {
                 ) : null}
               </View>
               <Switch value={item.enabled} onValueChange={(v) => toggle(item, v)}
-                trackColor={{ true: theme.accent, false: theme.border }} thumbColor="#fff" />
+                trackColor={{ true: theme.accent, false: theme.border }} thumbColor={theme.accentForeground} />
             </View>
             <View style={styles.pills}>
               <View style={[styles.pill, { backgroundColor: theme.backgroundElement }]}>
@@ -316,7 +316,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.two, padding: Spacing.six },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   emptyBtn: { marginTop: Spacing.three, minWidth: 180 },
   emptyWrap: { flexGrow: 1 },
   list: { padding: Spacing.four },

@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   ApiError,
@@ -155,7 +155,7 @@ export function BillingScreen() {
   }
 
   function toneColor(tone: 'ok' | 'warn' | 'bad') {
-    return tone === 'ok' ? '#22C55E' : tone === 'warn' ? '#F59E0B' : theme.destructive;
+    return tone === 'ok' ? theme.success : tone === 'warn' ? theme.warning : theme.destructive;
   }
 
   if (loading) {
@@ -170,11 +170,11 @@ export function BillingScreen() {
     return (
       <Screen edges={['bottom']}>
         <View style={styles.centered}>
-          <CreditCard color={theme.textSecondary} size={32} />
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>No billing</Text>
-          <Text style={[styles.muted, { color: theme.textSecondary }]}>
-            Billing isn’t available for this organization.
-          </Text>
+          <EmptyState
+            icon={CreditCard}
+            title="No billing"
+            subtitle="Billing isn’t available for this organization."
+          />
         </View>
       </Screen>
     );
@@ -481,7 +481,7 @@ function HistoryRow({
   theme: Theme; title: string; amount: string; status: string; date: string; receiptUrl: string | null;
 }) {
   const tone = STATUS_TONE[status] ?? 'warn';
-  const color = tone === 'ok' ? '#22C55E' : tone === 'warn' ? '#F59E0B' : theme.destructive;
+  const color = tone === 'ok' ? theme.success : tone === 'warn' ? theme.warning : theme.destructive;
   return (
     <View style={styles.histRow}>
       <ReceiptText color={theme.textSecondary} size={18} />
@@ -491,7 +491,7 @@ function HistoryRow({
       </View>
       <Text style={[styles.histStatus, { color }]}>{status}</Text>
       {receiptUrl ? (
-        <Pressable onPress={() => Linking.openURL(receiptUrl)} hitSlop={8}>
+        <Pressable onPress={() => Linking.openURL(receiptUrl)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Open receipt">
           <ExternalLink color={theme.accent} size={16} />
         </Pressable>
       ) : null}
@@ -503,19 +503,18 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.two, padding: Spacing.six },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   content: { padding: Spacing.four, gap: Spacing.four, paddingBottom: Spacing.six },
 
   card: { borderRadius: Radius.lg, borderWidth: StyleSheet.hairlineWidth * 2, padding: Spacing.three },
   section: { gap: Spacing.two },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: Spacing.one },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   editText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
 
   planTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   planName: { fontSize: FontSize.xl, fontWeight: FontWeight.bold },
-  planPrice: { fontSize: FontSize.base, marginTop: 2 },
+  planPrice: { fontSize: FontSize.base, marginTop: Spacing.half },
   badge: { paddingHorizontal: Spacing.two, paddingVertical: 3, borderRadius: Radius.full },
   badgeText: { fontSize: FontSize.xs, fontWeight: FontWeight.bold, textTransform: 'capitalize' },
   subInfo: { fontSize: FontSize.sm, marginTop: Spacing.two },

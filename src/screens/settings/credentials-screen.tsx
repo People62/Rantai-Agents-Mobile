@@ -21,7 +21,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   ApiError,
@@ -122,6 +122,8 @@ export function CredentialsScreen({ navigation }: Props) {
         <Pressable
           onPress={openCreate}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Add credential"
           style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
           <Plus color={theme.accent} size={24} />
         </Pressable>
@@ -211,12 +213,12 @@ export function CredentialsScreen({ navigation }: Props) {
         ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <KeyRound color={theme.textSecondary} size={32} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No credentials</Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              Add API keys and tokens your tools can use.
-            </Text>
-            <Button label="Add credential" onPress={openCreate} style={styles.emptyBtn} />
+            <EmptyState
+              icon={KeyRound}
+              title="No credentials"
+              subtitle="Add API keys and tokens your tools can use."
+              action={<Button label="Add credential" onPress={openCreate} style={styles.emptyBtn} />}
+            />
           </View>
         }
         renderItem={({ item }) => (
@@ -353,7 +355,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.two, padding: Spacing.four },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   emptyBtn: { marginTop: Spacing.three, minWidth: 180 },
   emptyWrap: { flexGrow: 1 },
   list: { padding: Spacing.four },
