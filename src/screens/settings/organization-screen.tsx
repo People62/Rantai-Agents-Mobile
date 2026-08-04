@@ -337,7 +337,7 @@ export function OrganizationScreen() {
                       <Text style={[styles.pillText, { color: theme.textSecondary }]}>{m.role}</Text>
                     </View>
                     {actionable ? (
-                      <Pressable onPress={() => setActionMember(m)} hitSlop={8}>
+                      <Pressable onPress={() => setActionMember(m)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Member actions">
                         <MoreVertical color={theme.textSecondary} size={18} />
                       </Pressable>
                     ) : null}
@@ -439,7 +439,7 @@ export function OrganizationScreen() {
           <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <View style={styles.dialogHead}>
               <Text style={[styles.dialogTitle, { color: theme.text }]}>Change role</Text>
-              <Pressable onPress={() => setRoleMember(null)} hitSlop={8}>
+              <Pressable onPress={() => setRoleMember(null)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close">
                 <X color={theme.textSecondary} size={20} />
               </Pressable>
             </View>

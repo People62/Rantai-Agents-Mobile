@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   Agent,
@@ -114,6 +114,8 @@ export function ApiKeysScreen({ navigation }: Props) {
         <Pressable
           onPress={openCreate}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Create API key"
           style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
           <Plus color={theme.accent} size={24} />
         </Pressable>
@@ -205,12 +207,12 @@ export function ApiKeysScreen({ navigation }: Props) {
         ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
         ListEmptyComponent={
           <View style={styles.centered}>
-            <KeySquare color={theme.textSecondary} size={32} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No API keys</Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              Create a key to call an agent from your own apps.
-            </Text>
-            <Button label="Create key" onPress={openCreate} style={styles.emptyBtn} />
+            <EmptyState
+              icon={KeySquare}
+              title="No API keys"
+              subtitle="Create a key to call an agent from your own apps."
+              action={<Button label="Create key" onPress={openCreate} style={styles.emptyBtn} />}
+            />
           </View>
         }
         renderItem={({ item }) => (
@@ -233,11 +235,13 @@ export function ApiKeysScreen({ navigation }: Props) {
                 value={item.enabled}
                 onValueChange={(v) => toggleEnabled(item, v)}
                 trackColor={{ true: theme.accent, false: theme.border }}
-                thumbColor="#fff"
+                thumbColor={theme.accentForeground}
               />
             </View>
             <Pressable
               onPress={() => copy(item.key)}
+              accessibilityRole="button"
+              accessibilityLabel="Copy API key"
               style={[styles.keyBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
               <Text style={[styles.keyText, { color: theme.textSecondary }]} numberOfLines={1}>
                 {maskKey(item.key)}

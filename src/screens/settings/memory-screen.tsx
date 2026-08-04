@@ -16,7 +16,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   MemoryItem,
@@ -187,11 +187,11 @@ export function MemoryScreen() {
         }
         ListEmptyComponent={
           <View style={styles.centered}>
-            <Brain color={theme.textSecondary} size={32} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No memories</Text>
-            <Text style={[styles.muted, { color: theme.textSecondary }]}>
-              Memories appear as your agents learn from conversations.
-            </Text>
+            <EmptyState
+              icon={Brain}
+              title="No memories"
+              subtitle="Memories appear as your agents learn from conversations."
+            />
           </View>
         }
         renderItem={({ item }) => (
@@ -263,7 +263,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.two, padding: Spacing.six },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   list: { padding: Spacing.four, flexGrow: 1 },
 
   header: { gap: Spacing.three, marginBottom: Spacing.three },
@@ -271,7 +270,7 @@ const styles = StyleSheet.create({
   statTile: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    gap: Spacing.half,
     paddingVertical: Spacing.three,
     borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,

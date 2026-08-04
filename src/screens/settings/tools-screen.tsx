@@ -114,7 +114,7 @@ export function ToolsScreen({ navigation }: Props) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={openCreate} hitSlop={8} style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
+        <Pressable onPress={openCreate} hitSlop={8} accessibilityRole="button" accessibilityLabel="Create tool" style={{ paddingHorizontal: Spacing.two, paddingVertical: Spacing.one }}>
           <Plus color={theme.accent} size={24} />
         </Pressable>
       ),
@@ -242,7 +242,7 @@ export function ToolsScreen({ navigation }: Props) {
         </View>
       ) : (
         <Switch value={item.enabled ?? true} onValueChange={(v) => toggle(item, v)}
-          trackColor={{ true: theme.accent, false: theme.border }} thumbColor="#fff" />
+          trackColor={{ true: theme.accent, false: theme.border }} thumbColor={theme.accentForeground} />
       )}
     </Pressable>
   );
@@ -327,7 +327,7 @@ export function ToolsScreen({ navigation }: Props) {
                         <TextInput value={h.value} onChangeText={(v) => setHeaders((p) => p.map((x, idx) => idx === i ? { ...x, value: v } : x))}
                           placeholder="value" placeholderTextColor={theme.textSecondary} autoCapitalize="none"
                           style={[styles.input, styles.pairInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]} />
-                        <Pressable onPress={() => setHeaders((p) => p.filter((_, idx) => idx !== i))} hitSlop={6} style={styles.pairRemove}>
+                        <Pressable onPress={() => setHeaders((p) => p.filter((_, idx) => idx !== i))} hitSlop={6} accessibilityRole="button" accessibilityLabel="Remove header" style={styles.pairRemove}>
                           <X color={theme.textSecondary} size={16} />
                         </Pressable>
                       </View>

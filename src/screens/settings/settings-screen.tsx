@@ -148,7 +148,7 @@ export function SettingsScreen({ navigation }: Props) {
         {/* Account */}
         <View style={[styles.accountCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-            <Text style={styles.avatarText}>{initial}</Text>
+            <Text style={[styles.avatarText, { color: theme.accentForeground }]}>{initial}</Text>
           </View>
           <View style={styles.flex}>
             <Text style={[styles.accountName, { color: theme.text }]} numberOfLines={1}>
@@ -279,7 +279,7 @@ export function SettingsScreen({ navigation }: Props) {
                     onValueChange={(v) => toggleFeature(f.feature, v)}
                     disabled={togglingFeature === f.feature}
                     trackColor={{ true: theme.accent, false: theme.border }}
-                    thumbColor="#fff"
+                    thumbColor={theme.accentForeground}
                   />
                 </View>
               </View>
@@ -423,10 +423,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: '#fff', fontSize: FontSize.xl, fontWeight: FontWeight.bold },
+  avatarText: { fontSize: FontSize.xl, fontWeight: FontWeight.bold },
   accountName: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
   accountEmail: { fontSize: FontSize.base, marginTop: 1 },
-  roleBadge: { paddingHorizontal: Spacing.two, paddingVertical: 2, borderRadius: Radius.full },
+  roleBadge: { paddingHorizontal: Spacing.two, paddingVertical: Spacing.half, borderRadius: Radius.full },
   roleText: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold, textTransform: 'capitalize' },
 
   section: { gap: Spacing.two },
