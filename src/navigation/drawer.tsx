@@ -11,6 +11,7 @@ import {
   MessageCirclePlus,
   Search,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   SquarePen,
   Users,
@@ -19,11 +20,13 @@ import {
 
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/navigation/auth-context';
 import { AgentsScreen } from '@/screens/agents/agents-screen';
 import { HomeScreen } from '@/screens/home/home-screen';
 import { MarketplaceScreen } from '@/screens/marketplace/marketplace-screen';
 import { NewChatScreen } from '@/screens/chat/new-chat-screen';
 import { makePlaceholder } from '@/screens/placeholder';
+import { AdminStack } from './admin-stack';
 import { DrawerContent } from './drawer-content';
 import { AgentStack } from './agent-stack';
 import { ChatStack } from './chat-stack';
@@ -42,6 +45,8 @@ const MediaStudioScreen = makePlaceholder('Media Studio', 'Generate images, audi
 
 export function AppDrawer() {
   const theme = useTheme();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
     <Drawer.Navigator
@@ -171,6 +176,23 @@ export function AppDrawer() {
           drawerIcon: ({ color }) => <ShoppingCart color={color} size={FontSize.xxl} />,
         }}
       />
+      {isAdmin ? (
+        <Drawer.Screen
+          name="Admin"
+          component={AdminStack}
+          options={{
+            title: 'Admin',
+            headerShown: false,
+            drawerIcon: ({ color }) => <ShieldCheck color={color} size={FontSize.xxl} />,
+          }}
+          listeners={({ navigation }) => ({
+            drawerItemPress: (e) => {
+              e.preventDefault();
+              navigation.navigate('Admin', { screen: 'AdminDashboard' });
+            },
+          })}
+        />
+      ) : null}
       <Drawer.Screen
         name="Settings"
         component={SettingsStack}
