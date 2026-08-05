@@ -1,6 +1,8 @@
 /**
- * AdminStack — platform admin console: dashboard → channel config. Only mounted
- * for users whose platform role is ADMIN (gated in the drawer).
+ * AdminStack — platform admin console. Only mounted for users whose platform
+ * role is ADMIN (gated in the drawer). Mirrors the web `/dashboard/admin`:
+ * a single shell with three segmented tabs (Users · Models · Knowledge), plus
+ * a pushed user-detail screen.
  */
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -9,8 +11,8 @@ import { Pressable } from 'react-native';
 
 import { FontFamily, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { AdminChannelScreen } from '@/screens/admin/admin-channel-screen';
-import { AdminDashboardScreen } from '@/screens/admin/admin-dashboard-screen';
+import { AdminHomeScreen } from '@/screens/admin/admin-home-screen';
+import { AdminUserDetailScreen } from '@/screens/admin/admin-user-detail-screen';
 import type { AdminStackParamList, DrawerParamList } from './types';
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -27,8 +29,8 @@ export function AdminStack() {
         headerShadowVisible: false,
       }}>
       <Stack.Screen
-        name="AdminDashboard"
-        component={AdminDashboardScreen}
+        name="AdminHome"
+        component={AdminHomeScreen}
         options={({ navigation }) => ({
           title: 'Admin',
           headerLeft: () => (
@@ -45,7 +47,11 @@ export function AdminStack() {
           ),
         })}
       />
-      <Stack.Screen name="AdminChannel" component={AdminChannelScreen} options={{ title: 'Channel' }} />
+      <Stack.Screen
+        name="AdminUserDetail"
+        component={AdminUserDetailScreen}
+        options={{ title: 'User' }}
+      />
     </Stack.Navigator>
   );
 }
