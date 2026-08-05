@@ -188,7 +188,7 @@ export function AppDrawer() {
           listeners={({ navigation }) => ({
             drawerItemPress: (e) => {
               e.preventDefault();
-              navigation.navigate('Admin', { screen: 'AdminDashboard' });
+              navigation.navigate('Admin', { screen: 'AdminHome' });
             },
           })}
         />

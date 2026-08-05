@@ -42,8 +42,10 @@ export type MediaStackParamList = {
 };
 
 export type AdminStackParamList = {
-  AdminDashboard: undefined;
-  AdminChannel: { channel: import('@/lib/api').AdminChannel };
+  /** Console shell with the Users / Models / Knowledge segmented tabs. */
+  AdminHome: { tab?: 'users' | 'models' | 'knowledge' } | undefined;
+  /** User detail — role, suspension, password reset. */
+  AdminUserDetail: { id: string };
 };
 
 export type FilesStackParamList = {

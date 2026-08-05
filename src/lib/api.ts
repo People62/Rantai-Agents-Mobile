@@ -625,59 +625,186 @@ export async function updateFeature(
 
 // ============================================================
 // Admin console — /api/mobile/admin (platform admin only)
+// Three tabs: Users, Models (+ providers), Knowledge (RAG settings).
 // ============================================================
 
-export interface AdminChannelStat {
-  channel: string
-  count: number
-  enabled: boolean
+export interface AdminUserOrg {
+  id: string
+  name: string
+  role: string
 }
 
-/** Platform admin dashboard stats (customer-support metrics). */
-export interface AdminStats {
-  totalConversations: number
-  activeConversations: number
-  resolvedToday: number
-  avgResponseTime: string
-  channelStats: AdminChannelStat[]
+export interface AdminUser {
+  id: string
+  email: string
+  name: string | null
+  role: 'USER' | 'ADMIN'
+  suspendedAt: string | null
+  lastActiveAt: string | null
+  createdAt: string
+  organizations: AdminUserOrg[]
 }
 
-/** Admin dashboard stats — GET /api/mobile/admin/stats. */
-export async function getAdminStats(token: string): Promise<AdminStats> {
-  const res = await authFetch("/api/mobile/admin/stats", token)
-  return res.json()
+export interface AdminUsersPage {
+  users: AdminUser[]
+  total: number
+  page: number
+  pageSize: number
 }
 
-/** One communication channel's settings. */
-export interface AdminChannel {
-  id: string | null
-  channel: string
-  enabled: boolean
-  isPrimary: boolean
-  config: Record<string, unknown>
-  createdAt: string | null
-  updatedAt: string | null
-}
-
-/** Communication channels — GET /api/mobile/admin/channels. */
-export async function getAdminChannels(token: string): Promise<AdminChannel[]> {
-  const res = await authFetch("/api/mobile/admin/channels", token)
-  return res.json()
-}
-
-/** Enable / set-primary / configure one channel — PUT /api/mobile/admin/channels. */
-export async function updateAdminChannel(
+/** List platform users — GET /api/mobile/admin/users. */
+export async function getAdminUsers(
   token: string,
-  input: {
-    channel: string
-    enabled?: boolean
-    isPrimary?: boolean
-    config?: Record<string, unknown>
-  },
-): Promise<AdminChannel> {
-  const res = await authFetch("/api/mobile/admin/channels", token, {
-    method: "PUT",
+  opts?: { search?: string; role?: 'USER' | 'ADMIN'; suspended?: boolean; page?: number },
+): Promise<AdminUsersPage> {
+  const qs = new URLSearchParams()
+  if (opts?.search) qs.set("search", opts.search)
+  if (opts?.role) qs.set("role", opts.role)
+  if (opts?.suspended != null) qs.set("suspended", String(opts.suspended))
+  if (opts?.page) qs.set("page", String(opts.page))
+  const res = await authFetch(`/api/mobile/admin/users${qs.toString() ? `?${qs}` : ""}`, token)
+  return res.json()
+}
+
+/** Fetch a single user's detail — GET /api/mobile/admin/users/:id. */
+export async function getAdminUser(token: string, id: string): Promise<AdminUser> {
+  const res = await authFetch(`/api/mobile/admin/users/${id}`, token)
+  return res.json()
+}
+
+/** Create a user — POST /api/mobile/admin/users. Returns the id + a generated password if any. */
+export async function createAdminUser(
+  token: string,
+  input: { email: string; name?: string; password?: string; role?: 'USER' | 'ADMIN' },
+): Promise<{ user: { id: string; email: string }; generatedPassword: string | null }> {
+  const res = await authFetch("/api/mobile/admin/users", token, {
+    method: "POST",
     body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Change a user's role and/or suspension — PATCH /api/mobile/admin/users/:id. */
+export async function updateAdminUser(
+  token: string,
+  id: string,
+  input: { role?: 'USER' | 'ADMIN'; suspended?: boolean },
+): Promise<AdminUser> {
+  const res = await authFetch(`/api/mobile/admin/users/${id}`, token, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Reset a user's password — POST /api/mobile/admin/users/:id/reset-password. */
+export async function resetAdminUserPassword(
+  token: string,
+  id: string,
+): Promise<{ tempPassword: string }> {
+  const res = await authFetch(`/api/mobile/admin/users/${id}/reset-password`, token, {
+    method: "POST",
+  })
+  return res.json()
+}
+
+// ── Models + providers ──
+
+export interface AdminModel {
+  id: string
+  name: string
+  provider: string
+  providerId: string | null
+  source: 'openrouter_sync' | 'discovered' | 'manual'
+  enabled: boolean
+  isActive: boolean
+  isFree: boolean
+  hasVision: boolean
+  hasToolCalling: boolean
+  contextWindow: number
+  llmProvider?: { name: string } | null
+}
+
+/** List models — GET /api/mobile/admin/models. */
+export async function getAdminModels(
+  token: string,
+  opts?: { search?: string; providerId?: string },
+): Promise<{ models: AdminModel[]; defaultModelId: string | null }> {
+  const qs = new URLSearchParams()
+  if (opts?.search) qs.set("search", opts.search)
+  if (opts?.providerId) qs.set("providerId", opts.providerId)
+  const res = await authFetch(`/api/mobile/admin/models${qs.toString() ? `?${qs}` : ""}`, token)
+  return res.json()
+}
+
+/** Enable / set-default / toggle tool-calling — PATCH /api/mobile/admin/models. */
+export async function updateAdminModel(
+  token: string,
+  input: { id: string; enabled?: boolean; default?: boolean; hasToolCalling?: boolean },
+): Promise<{ ok: boolean; defaultModelId?: string }> {
+  const res = await authFetch("/api/mobile/admin/models", token, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+/** Sync the OpenRouter catalog — POST /api/mobile/admin/models/sync. */
+export async function syncAdminModels(token: string): Promise<{ synced: number }> {
+  const res = await authFetch("/api/mobile/admin/models/sync", token, { method: "POST" })
+  return res.json()
+}
+
+export interface AdminProvider {
+  id: string
+  name: string
+  type: 'openrouter' | 'openai_compatible'
+  baseUrl: string | null
+  keyHint: string | null
+  enabled: boolean
+  modelCount: number
+}
+
+/**
+ * List providers — GET /api/mobile/admin/providers. Read-only in Fase 1;
+ * provider create/edit is deferred (managed from the web console for now).
+ */
+export async function getAdminProviders(token: string): Promise<{ providers: AdminProvider[] }> {
+  const res = await authFetch("/api/mobile/admin/providers", token)
+  return res.json()
+}
+
+// ── Knowledge (RAG) settings ──
+
+export interface KbField {
+  key: string
+  source: 'db' | 'env' | 'default' | 'provider'
+  secret?: boolean
+  value?: unknown
+  set?: boolean
+}
+
+export interface KbSettings {
+  fields: KbField[]
+  embeddingProviderId: string | null
+  effective: Record<string, unknown>
+}
+
+/** Global KB/RAG settings — GET /api/mobile/admin/settings/kb. */
+export async function getKbSettings(token: string): Promise<KbSettings> {
+  const res = await authFetch("/api/mobile/admin/settings/kb", token)
+  return res.json()
+}
+
+/** Update KB settings — PUT /api/mobile/admin/settings/kb. 409 → requiresEmbeddingConfirmation. */
+export async function updateKbSettings(
+  token: string,
+  updates: Record<string, unknown>,
+  confirmEmbeddingChange?: boolean,
+): Promise<KbSettings> {
+  const res = await authFetch("/api/mobile/admin/settings/kb", token, {
+    method: "PUT",
+    body: JSON.stringify({ updates, confirmEmbeddingChange }),
   })
   return res.json()
 }
