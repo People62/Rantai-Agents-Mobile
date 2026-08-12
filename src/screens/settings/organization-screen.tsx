@@ -11,6 +11,7 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   ScrollView,
@@ -350,54 +351,56 @@ export function OrganizationScreen() {
       </ScrollView>
 
       {/* Invite modal */}
-      <Modal visible={inviteOpen} transparent animationType="fade" onRequestClose={() => setInviteOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setInviteOpen(false)}>
-          <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.dialogTitle, { color: theme.text }]}>Invite member</Text>
-            <TextInput
-              value={inviteEmail}
-              onChangeText={setInviteEmail}
-              placeholder="email@example.com"
-              placeholderTextColor={theme.textSecondary}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
-            />
-            <Text style={[styles.label, { color: theme.textSecondary }]}>Role</Text>
-            <View style={styles.roleRow}>
-              {ROLES.map((r) => {
-                const on = r === inviteRole;
-                return (
-                  <Pressable
-                    key={r}
-                    onPress={() => setInviteRole(r)}
-                    style={[
-                      styles.roleChip,
-                      {
-                        backgroundColor: on ? `${theme.accent}22` : theme.backgroundElement,
-                        borderColor: on ? theme.accent : theme.border,
-                      },
-                    ]}>
-                    <Text style={[styles.roleChipText, { color: on ? theme.accent : theme.text }]}>{r}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            {inviteError ? (
-              <Text style={[styles.errorText, { color: theme.destructive }]}>{inviteError}</Text>
-            ) : null}
-            <View style={styles.dialogActions}>
-              <Button label="Cancel" variant="outline" onPress={() => setInviteOpen(false)} style={styles.flex} />
-              <Button
-                label="Invite"
-                onPress={doInvite}
-                loading={inviting}
-                disabled={!inviteEmail.trim()}
-                style={styles.flex}
+      <Modal visible={inviteOpen} transparent statusBarTranslucent animationType="fade" onRequestClose={() => setInviteOpen(false)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={() => setInviteOpen(false)}>
+            <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.dialogTitle, { color: theme.text }]}>Invite member</Text>
+              <TextInput
+                value={inviteEmail}
+                onChangeText={setInviteEmail}
+                placeholder="email@example.com"
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
               />
-            </View>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Role</Text>
+              <View style={styles.roleRow}>
+                {ROLES.map((r) => {
+                  const on = r === inviteRole;
+                  return (
+                    <Pressable
+                      key={r}
+                      onPress={() => setInviteRole(r)}
+                      style={[
+                        styles.roleChip,
+                        {
+                          backgroundColor: on ? `${theme.accent}22` : theme.backgroundElement,
+                          borderColor: on ? theme.accent : theme.border,
+                        },
+                      ]}>
+                      <Text style={[styles.roleChipText, { color: on ? theme.accent : theme.text }]}>{r}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {inviteError ? (
+                <Text style={[styles.errorText, { color: theme.destructive }]}>{inviteError}</Text>
+              ) : null}
+              <View style={styles.dialogActions}>
+                <Button label="Cancel" variant="outline" onPress={() => setInviteOpen(false)} style={styles.flex} />
+                <Button
+                  label="Invite"
+                  onPress={doInvite}
+                  loading={inviting}
+                  disabled={!inviteEmail.trim()}
+                  style={styles.flex}
+                />
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Member action sheet */}

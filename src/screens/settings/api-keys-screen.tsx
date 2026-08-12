@@ -253,8 +253,8 @@ export function ApiKeysScreen({ navigation }: Props) {
       />
 
       {/* Create modal */}
-      <Modal visible={createOpen} transparent animationType="slide" onRequestClose={() => setCreateOpen(false)}>
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Modal visible={createOpen} transparent statusBarTranslucent animationType="slide" onRequestClose={() => setCreateOpen(false)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
           <Pressable style={styles.sheetBackdrop} onPress={() => setCreateOpen(false)}>
             <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <Text style={[styles.sheetTitle, { color: theme.text }]}>New API key</Text>

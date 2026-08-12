@@ -9,6 +9,7 @@ import { ChevronRight, ExternalLink, Play, Trash2 } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Pressable,
@@ -384,12 +385,20 @@ export function WorkflowDetailScreen({ route, navigation }: Props) {
       <Modal
         visible={runOpen}
         transparent
+        statusBarTranslucent
         animationType="slide"
         onRequestClose={() => setRunOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setRunOpen(false)}>
-          <Pressable
-            style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.sheetTitle, { color: theme.text }]}>Run workflow</Text>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={() => setRunOpen(false)}>
+            <Pressable
+              style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.sheetTitle, { color: theme.text }]}>Run workflow</Text>
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                style={styles.sheetScroll}
+                contentContainerStyle={styles.sheetScrollContent}>
             {inputs.length === 0 ? (
               <Text style={[styles.muted, { color: theme.textSecondary }]}>
                 This workflow takes no inputs.
@@ -442,9 +451,11 @@ export function WorkflowDetailScreen({ route, navigation }: Props) {
             {runError ? (
               <Text style={[styles.runError, { color: theme.destructive }]}>{runError}</Text>
             ) : null}
-            <Button label="Start run" onPress={submitRun} loading={running} style={styles.startBtn} />
+              <Button label="Start run" onPress={submitRun} loading={running} style={styles.startBtn} />
+              </ScrollView>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Delete confirm */}
@@ -532,7 +543,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
     padding: Spacing.four,
     gap: Spacing.three,
+    maxHeight: '88%',
   },
+  sheetScroll: { flexGrow: 0 },
+  sheetScrollContent: { gap: Spacing.three, paddingBottom: Spacing.one },
   sheetTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold },
   field: { gap: Spacing.one },
   boolField: {

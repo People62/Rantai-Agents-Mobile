@@ -279,8 +279,8 @@ export function ToolsScreen({ navigation }: Props) {
       />
 
       {/* Form */}
-      <Modal visible={!!form} transparent animationType="slide" onRequestClose={() => setForm(null)}>
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Modal visible={!!form} transparent statusBarTranslucent animationType="slide" onRequestClose={() => setForm(null)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
           <Pressable style={styles.sheetBackdrop} onPress={() => setForm(null)}>
             <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <ScrollView keyboardShouldPersistTaps="handled">
