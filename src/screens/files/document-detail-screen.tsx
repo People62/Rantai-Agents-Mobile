@@ -7,8 +7,8 @@ import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   ScrollView,
@@ -18,7 +18,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, Screen, useToast } from '@/components/ui';
 import { Scrim, Fonts, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   DocumentIntelligence,
@@ -40,6 +40,7 @@ export function DocumentDetailScreen({ route, navigation }: Props) {
   const { id } = route.params;
   const theme = useTheme();
   const { token } = useAuth();
+  const toast = useToast();
 
   const [doc, setDoc] = useState<KnowledgeDocumentDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,7 +136,7 @@ export function DocumentDetailScreen({ route, navigation }: Props) {
       navigation.setOptions({ title: t });
       setEditOpen(false);
     } catch {
-      Alert.alert('Failed', 'Could not update the title.');
+      toast.show('Could not update the title.', 'error');
     } finally {
       setBusy(false);
     }
@@ -261,22 +262,24 @@ export function DocumentDetailScreen({ route, navigation }: Props) {
       </ScrollView>
 
       {/* Edit title dialog */}
-      <Modal visible={editOpen} transparent animationType="fade" onRequestClose={() => setEditOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setEditOpen(false)}>
-          <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.dialogTitle, { color: theme.text }]}>Edit title</Text>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              autoFocus
-              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
-            />
-            <View style={styles.dialogActions}>
-              <Button label="Cancel" variant="outline" onPress={() => setEditOpen(false)} style={styles.flex} />
-              <Button label="Save" onPress={saveTitle} loading={busy} disabled={!title.trim()} style={styles.flex} />
-            </View>
+      <Modal visible={editOpen} transparent statusBarTranslucent animationType="fade" onRequestClose={() => setEditOpen(false)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={() => setEditOpen(false)}>
+            <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.dialogTitle, { color: theme.text }]}>Edit title</Text>
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                autoFocus
+                style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+              />
+              <View style={styles.dialogActions}>
+                <Button label="Cancel" variant="outline" onPress={() => setEditOpen(false)} style={styles.flex} />
+                <Button label="Save" onPress={saveTitle} loading={busy} disabled={!title.trim()} style={styles.flex} />
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Delete confirmation (themed) */}
@@ -299,6 +302,7 @@ export function DocumentDetailScreen({ route, navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
+      {toast.node}
     </Screen>
   );
 }

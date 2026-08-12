@@ -11,8 +11,8 @@ import { Check, ChevronDown, FileText, FileUp, Pencil, Plus, Search, Trash2 } fr
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   RefreshControl,
@@ -24,7 +24,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, EmptyState, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen, useToast } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   KnowledgeCategory,
@@ -70,6 +70,7 @@ export function DocumentsScreen({ route, navigation }: Props) {
   const groupId = route.params?.groupId;
   const theme = useTheme();
   const { token } = useAuth();
+  const toast = useToast();
   const [docs, setDocs] = useState<KnowledgeDocumentListItem[]>([]);
   const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
   const [groups, setGroups] = useState<KnowledgeGroup[]>([]);
@@ -115,7 +116,7 @@ export function DocumentsScreen({ route, navigation }: Props) {
       setDocs((prev) => prev.map((d) => (d.id === renaming.id ? { ...d, title: t } : d)));
       setRenaming(null);
     } catch {
-      Alert.alert('Failed', 'Could not rename the document.');
+      toast.show('Could not rename the document.', 'error');
     } finally {
       setActionBusy(false);
     }
@@ -189,14 +190,14 @@ export function DocumentsScreen({ route, navigation }: Props) {
         size: f.size,
       };
       if (file.size && file.size > MAX_SIZE) {
-        Alert.alert('Too large', 'Files must be 50 MB or smaller.');
+        toast.show('Files must be 50 MB or smaller.', 'error');
         return;
       }
       setPicked(file);
       if (!upTitle) setUpTitle(cleanTitle(file.name));
     } catch (e) {
       if (e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'DOCUMENT_PICKER_CANCELED') return;
-      Alert.alert('Failed', 'Could not pick a file.');
+      toast.show('Could not pick a file.', 'error');
     }
   }
 
@@ -210,7 +211,7 @@ export function DocumentsScreen({ route, navigation }: Props) {
       setUpCats((prev) => (prev.includes(c.name) ? prev : [...prev, c.name]));
       setNewCat('');
     } catch {
-      Alert.alert('Failed', 'Could not create the category.');
+      toast.show('Could not create the category.', 'error');
     } finally {
       setAddingCat(false);
     }
@@ -239,7 +240,7 @@ export function DocumentsScreen({ route, navigation }: Props) {
             : status === 403
               ? "You don't have permission to upload here."
               : 'Could not process the document. Try a smaller or simpler file.';
-      Alert.alert('Upload failed', msg);
+      toast.show(msg, 'error');
     } finally {
       setUploading(false);
     }
@@ -415,24 +416,26 @@ export function DocumentsScreen({ route, navigation }: Props) {
       </Modal>
 
       {/* Rename dialog */}
-      <Modal visible={!!renaming} transparent animationType="fade" onRequestClose={() => setRenaming(null)}>
-        <Pressable style={styles.centerBackdrop} onPress={() => setRenaming(null)}>
-          <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.dialogTitle, { color: theme.text }]}>Rename file</Text>
-            <TextInput
-              value={renameText}
-              onChangeText={setRenameText}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={submitRename}
-              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
-            />
-            <View style={styles.dialogActions}>
-              <Button label="Cancel" variant="outline" onPress={() => setRenaming(null)} style={styles.flex} />
-              <Button label="Save" onPress={submitRename} loading={actionBusy} disabled={!renameText.trim()} style={styles.flex} />
-            </View>
+      <Modal visible={!!renaming} transparent statusBarTranslucent animationType="fade" onRequestClose={() => setRenaming(null)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <Pressable style={styles.centerBackdrop} onPress={() => setRenaming(null)}>
+            <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.dialogTitle, { color: theme.text }]}>Rename file</Text>
+              <TextInput
+                value={renameText}
+                onChangeText={setRenameText}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={submitRename}
+                style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+              />
+              <View style={styles.dialogActions}>
+                <Button label="Cancel" variant="outline" onPress={() => setRenaming(null)} style={styles.flex} />
+                <Button label="Save" onPress={submitRename} loading={actionBusy} disabled={!renameText.trim()} style={styles.flex} />
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Delete confirmation (themed) */}
@@ -457,118 +460,122 @@ export function DocumentsScreen({ route, navigation }: Props) {
       </Modal>
 
       {/* Upload dialog */}
-      <Modal visible={dialogOpen} transparent animationType="slide" onRequestClose={() => setDialogOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setDialogOpen(false)}>
-          <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.sheetTitle, { color: theme.text }]}>Upload document</Text>
-            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sheetBody}>
-              {/* File */}
-              <Pressable
-                onPress={chooseFile}
-                style={[styles.fileBtn, { borderColor: theme.border, backgroundColor: theme.background }]}>
-                <FileUp color={theme.accent} size={20} />
-                <Text style={[styles.fileBtnText, { color: picked ? theme.text : theme.textSecondary }]} numberOfLines={1}>
-                  {picked ? picked.name : 'Choose a file…'}
-                </Text>
-              </Pressable>
-              {picked?.size ? (
-                <Text style={[styles.hint, { color: theme.textSecondary }]}>{fmtSize(picked.size)}</Text>
-              ) : null}
+      <Modal visible={dialogOpen} transparent statusBarTranslucent animationType="slide" onRequestClose={() => setDialogOpen(false)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={() => setDialogOpen(false)}>
+            <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.sheetTitle, { color: theme.text }]}>Upload document</Text>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetBody}>
+                {/* File */}
+                <Pressable
+                  onPress={chooseFile}
+                  style={[styles.fileBtn, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                  <FileUp color={theme.accent} size={20} />
+                  <Text style={[styles.fileBtnText, { color: picked ? theme.text : theme.textSecondary }]} numberOfLines={1}>
+                    {picked ? picked.name : 'Choose a file…'}
+                  </Text>
+                </Pressable>
+                {picked?.size ? (
+                  <Text style={[styles.hint, { color: theme.textSecondary }]}>{fmtSize(picked.size)}</Text>
+                ) : null}
 
-              {/* Title */}
-              <Field label="Title">
-                <TextInput
-                  value={upTitle}
-                  onChangeText={setUpTitle}
-                  placeholder="Document title"
-                  placeholderTextColor={theme.textSecondary}
-                  style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
-                />
-              </Field>
+                {/* Title */}
+                <Field label="Title">
+                  <TextInput
+                    value={upTitle}
+                    onChangeText={setUpTitle}
+                    placeholder="Document title"
+                    placeholderTextColor={theme.textSecondary}
+                    style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+                  />
+                </Field>
 
-              {/* Knowledge bases */}
-              {groups.length ? (
-                <Field label="Knowledge base">
-                  <View style={styles.wrapChips}>
-                    {groups.map((g) => (
-                      <SelChip
-                        key={g.id}
-                        label={g.name}
-                        active={upGroups.includes(g.id)}
-                        onPress={() => setUpGroups((p) => (p.includes(g.id) ? p.filter((x) => x !== g.id) : [...p, g.id]))}
-                        theme={theme}
-                      />
-                    ))}
+                {/* Knowledge bases */}
+                {groups.length ? (
+                  <Field label="Knowledge base">
+                    <View style={styles.wrapChips}>
+                      {groups.map((g) => (
+                        <SelChip
+                          key={g.id}
+                          label={g.name}
+                          active={upGroups.includes(g.id)}
+                          onPress={() => setUpGroups((p) => (p.includes(g.id) ? p.filter((x) => x !== g.id) : [...p, g.id]))}
+                          theme={theme}
+                        />
+                      ))}
+                    </View>
+                  </Field>
+                ) : null}
+
+                {/* Categories */}
+                <Field label="Categories">
+                  {categories.length ? (
+                    <View style={styles.wrapChips}>
+                      {categories.map((c) => (
+                        <SelChip
+                          key={c.id}
+                          label={c.label || c.name}
+                          active={upCats.includes(c.name)}
+                          onPress={() => setUpCats((p) => (p.includes(c.name) ? p.filter((x) => x !== c.name) : [...p, c.name]))}
+                          theme={theme}
+                        />
+                      ))}
+                    </View>
+                  ) : null}
+                  <View style={styles.addCatRow}>
+                    <TextInput
+                      value={newCat}
+                      onChangeText={setNewCat}
+                      placeholder="Add a new category…"
+                      placeholderTextColor={theme.textSecondary}
+                      onSubmitEditing={addCategory}
+                      returnKeyType="done"
+                      style={[styles.addCatInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+                    />
+                    <Pressable
+                      onPress={addCategory}
+                      disabled={!newCat.trim() || addingCat}
+                      accessibilityRole="button"
+                      accessibilityLabel="Add category"
+                      style={[styles.addCatBtn, { backgroundColor: theme.backgroundElement, borderColor: theme.border, opacity: newCat.trim() ? 1 : 0.5 }]}>
+                      {addingCat ? <ActivityIndicator size="small" color={theme.accent} /> : <Plus color={theme.accent} size={18} />}
+                    </Pressable>
                   </View>
                 </Field>
-              ) : null}
 
-              {/* Categories */}
-              <Field label="Categories">
-                {categories.length ? (
-                  <View style={styles.wrapChips}>
-                    {categories.map((c) => (
-                      <SelChip
-                        key={c.id}
-                        label={c.label || c.name}
-                        active={upCats.includes(c.name)}
-                        onPress={() => setUpCats((p) => (p.includes(c.name) ? p.filter((x) => x !== c.name) : [...p, c.name]))}
-                        theme={theme}
-                      />
-                    ))}
-                  </View>
-                ) : null}
-                <View style={styles.addCatRow}>
+                {/* Subcategory */}
+                <Field label="Subcategory (optional)">
                   <TextInput
-                    value={newCat}
-                    onChangeText={setNewCat}
-                    placeholder="Add a new category…"
+                    value={upSub}
+                    onChangeText={setUpSub}
+                    placeholder="e.g. 2026 policy"
                     placeholderTextColor={theme.textSecondary}
-                    onSubmitEditing={addCategory}
-                    returnKeyType="done"
-                    style={[styles.addCatInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+                    style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
                   />
-                  <Pressable
-                    onPress={addCategory}
-                    disabled={!newCat.trim() || addingCat}
-                    style={[styles.addCatBtn, { backgroundColor: theme.backgroundElement, borderColor: theme.border, opacity: newCat.trim() ? 1 : 0.5 }]}>
-                    {addingCat ? <ActivityIndicator size="small" color={theme.accent} /> : <Plus color={theme.accent} size={18} />}
-                  </Pressable>
-                </View>
-              </Field>
+                </Field>
 
-              {/* Subcategory */}
-              <Field label="Subcategory (optional)">
-                <TextInput
-                  value={upSub}
-                  onChangeText={setUpSub}
-                  placeholder="e.g. 2026 policy"
-                  placeholderTextColor={theme.textSecondary}
-                  style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
-                />
-              </Field>
-
-              {/* Enhanced analysis */}
-              <View style={styles.switchRow}>
-                <View style={styles.flex}>
-                  <Text style={[styles.fieldLabel, { color: theme.text }]}>Enhanced analysis</Text>
-                  <Text style={[styles.hint, { color: theme.textSecondary, marginTop: 0 }]}>
-                    Extract entities & relations (slower). Powers the Intelligence tab.
-                  </Text>
+                {/* Enhanced analysis */}
+                <View style={styles.switchRow}>
+                  <View style={styles.flex}>
+                    <Text style={[styles.fieldLabel, { color: theme.text }]}>Enhanced analysis</Text>
+                    <Text style={[styles.hint, { color: theme.textSecondary, marginTop: 0 }]}>
+                      Extract entities & relations (slower). Powers the Intelligence tab.
+                    </Text>
+                  </View>
+                  <Switch
+                    value={upEnhanced}
+                    onValueChange={setUpEnhanced}
+                    trackColor={{ true: theme.accent, false: theme.border }}
+                  />
                 </View>
-                <Switch
-                  value={upEnhanced}
-                  onValueChange={setUpEnhanced}
-                  trackColor={{ true: theme.accent, false: theme.border }}
-                />
+              </ScrollView>
+              <View style={styles.sheetActions}>
+                <Button label="Cancel" variant="outline" onPress={() => setDialogOpen(false)} style={styles.flex} />
+                <Button label="Upload" onPress={submitUpload} disabled={!picked} style={styles.flex} />
               </View>
-            </ScrollView>
-            <View style={styles.sheetActions}>
-              <Button label="Cancel" variant="outline" onPress={() => setDialogOpen(false)} style={styles.flex} />
-              <Button label="Upload" onPress={submitUpload} disabled={!picked} style={styles.flex} />
-            </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Processing overlay (ingestion is synchronous + slow) */}
@@ -584,6 +591,7 @@ export function DocumentsScreen({ route, navigation }: Props) {
           </View>
         </View>
       </Modal>
+      {toast.node}
     </Screen>
   );
 }

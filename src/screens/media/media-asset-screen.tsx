@@ -10,7 +10,6 @@ import { Download, ImageUp, Pause, Play, Star, Trash2 } from 'lucide-react-nativ
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   PermissionsAndroid,
@@ -23,7 +22,7 @@ import {
 } from 'react-native';
 import Video from 'react-native-video';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, Screen, useToast } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   MediaAsset,
@@ -47,6 +46,7 @@ export function MediaAssetScreen({ route, navigation }: Props) {
   const { id } = route.params;
   const theme = useTheme();
   const { token } = useAuth();
+  const toast = useToast();
 
   const [asset, setAsset] = useState<MediaAsset | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,7 +83,7 @@ export function MediaAssetScreen({ route, navigation }: Props) {
       const updated = await favoriteMediaAsset(token, asset.id, !asset.isFavorite);
       setAsset((prev) => (prev ? { ...prev, isFavorite: updated.isFavorite } : prev));
     } catch {
-      Alert.alert('Failed', 'Could not update favorite.');
+      toast.show('Could not update favorite.', 'error');
     } finally {
       setBusy(false);
     }
@@ -103,9 +103,9 @@ export function MediaAssetScreen({ route, navigation }: Props) {
       const localPath = `${RNFS.CachesDirectoryPath}/${asset.id}.${ext}`;
       await RNFS.downloadFile({ fromUrl: src.uri, toFile: localPath }).promise;
       await CameraRoll.save(`file://${localPath}`, { type: 'photo' });
-      Alert.alert('Saved', 'Image saved to your gallery.');
+      toast.show('Image saved to your gallery.', 'success');
     } catch {
-      Alert.alert('Save failed', 'Could not save the image to your gallery.');
+      toast.show('Could not save the image to your gallery.', 'error');
     } finally {
       setBusy(false);
     }
@@ -121,14 +121,14 @@ export function MediaAssetScreen({ route, navigation }: Props) {
         Platform.OS === 'android' ? RNFS.DownloadDirectoryPath : RNFS.DocumentDirectoryPath;
       await RNFS.downloadFile({ fromUrl: src.uri, toFile: `${dir}/rantai-${asset.id}.${ext}` })
         .promise;
-      Alert.alert(
-        'Saved',
+      toast.show(
         Platform.OS === 'android'
           ? 'Audio saved to your Downloads folder.'
           : 'Audio saved to the Files app.',
+        'success',
       );
     } catch {
-      Alert.alert('Save failed', 'Could not save the audio.');
+      toast.show('Could not save the audio.', 'error');
     } finally {
       setBusy(false);
     }
@@ -142,7 +142,7 @@ export function MediaAssetScreen({ route, navigation }: Props) {
       setDeleteOpen(false);
       navigation.goBack();
     } catch {
-      Alert.alert('Failed', 'Could not delete the asset.');
+      toast.show('Could not delete the asset.', 'error');
       setBusy(false);
     }
   }
@@ -282,6 +282,8 @@ export function MediaAssetScreen({ route, navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {toast.node}
     </Screen>
   );
 }

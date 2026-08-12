@@ -1190,6 +1190,8 @@ export interface ManagedSkill {
   tags: string[]
   source: string
   enabled: boolean
+  /** Global platform skills are read-only; only org-owned skills can be changed. */
+  editable?: boolean
   assistantCount?: number
 }
 

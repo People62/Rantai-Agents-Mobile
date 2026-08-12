@@ -4,16 +4,16 @@
  * a modal creates a new user (optionally returning a generated password).
  */
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { UserPlus, Users, Search, Copy } from 'lucide-react-native';
+import { UserPlus, Users, Search, Copy, Eye, EyeOff } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,7 +26,19 @@ import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme'
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/navigation/auth-context';
 import type { AdminStackParamList } from '@/navigation/types';
-import { AdminUser, createAdminUser, getAdminUsers } from '@/lib/api';
+import { AdminUser, ApiError, createAdminUser, getAdminUsers } from '@/lib/api';
+
+/** Extract the backend's `error` message from an ApiError body, else a fallback. */
+function apiMessage(e: unknown, fallback: string): string {
+  if (e instanceof ApiError) {
+    try {
+      return (JSON.parse(e.body) as { error?: string }).error ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
 
 type RoleFilter = 'ALL' | 'USER' | 'ADMIN';
 
@@ -42,7 +54,7 @@ export function AdminUsersTab({
   navigation: NativeStackNavigationProp<AdminStackParamList, 'AdminHome'>;
 }) {
   const theme = useTheme();
-  const { token } = useAuth();
+  const { token, user: me } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +67,7 @@ export function AdminUsersTab({
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [newIsAdmin, setNewIsAdmin] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -93,6 +106,7 @@ export function AdminUsersTab({
     setEmail('');
     setName('');
     setPassword('');
+    setShowPassword(false);
     setNewIsAdmin(false);
     setFormError(null);
     setGeneratedPassword(null);
@@ -117,7 +131,7 @@ export function AdminUsersTab({
       }
       load();
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : 'Failed to create user.');
+      setFormError(apiMessage(e, 'Failed to create user.'));
     } finally {
       setSaving(false);
     }
@@ -245,6 +259,11 @@ export function AdminUsersTab({
                 <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
                   {item.name?.trim() || item.email}
                 </Text>
+                {item.id === me?.id ? (
+                  <View style={[styles.tag, { backgroundColor: theme.accent }]}>
+                    <Text style={[styles.tagText, { color: theme.accentForeground }]}>You</Text>
+                  </View>
+                ) : null}
                 {item.role === 'ADMIN' ? (
                   <View style={[styles.tag, { backgroundColor: `${theme.accent}22` }]}>
                     <Text style={[styles.tagText, { color: theme.accent }]}>Admin</Text>
@@ -281,16 +300,20 @@ export function AdminUsersTab({
       <Modal
         visible={creating}
         transparent
+        statusBarTranslucent
         animationType="slide"
         onRequestClose={() => setCreating(false)}>
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
           <Pressable style={styles.sheetBackdrop} onPress={() => setCreating(false)}>
             <Pressable
               style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <Text style={[styles.sheetTitle, { color: theme.text }]}>New user</Text>
-
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                style={styles.sheetScroll}
+                contentContainerStyle={styles.sheetScrollContent}>
               {generatedPassword ? (
                 <>
                   <Text style={[styles.label, { color: theme.textSecondary }]}>
@@ -349,19 +372,34 @@ export function AdminUsersTab({
                   <Text style={[styles.label, { color: theme.textSecondary }]}>
                     Password (optional — generated if blank)
                   </Text>
-                  <TextInput
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Leave blank to auto-generate"
-                    placeholderTextColor={theme.textSecondary}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    secureTextEntry
-                    style={[
-                      styles.input,
-                      { color: theme.text, borderColor: theme.border, backgroundColor: theme.background },
-                    ]}
-                  />
+                  <View style={styles.passwordWrap}>
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="Leave blank to auto-generate"
+                      placeholderTextColor={theme.textSecondary}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      secureTextEntry={!showPassword}
+                      style={[
+                        styles.input,
+                        styles.inputWithIcon,
+                        { color: theme.text, borderColor: theme.border, backgroundColor: theme.background },
+                      ]}
+                    />
+                    <Pressable
+                      onPress={() => setShowPassword((v) => !v)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                      style={styles.eyeBtn}>
+                      {showPassword ? (
+                        <EyeOff color={theme.textSecondary} size={20} />
+                      ) : (
+                        <Eye color={theme.textSecondary} size={20} />
+                      )}
+                    </Pressable>
+                  </View>
 
                   <Pressable
                     onPress={() => setNewIsAdmin((v) => !v)}
@@ -405,6 +443,7 @@ export function AdminUsersTab({
                   </View>
                 </>
               )}
+              </ScrollView>
             </Pressable>
           </Pressable>
         </KeyboardAvoidingView>
@@ -467,7 +506,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth * 2,
     gap: Spacing.two,
+    maxHeight: '90%',
   },
+  sheetScroll: { flexGrow: 0 },
+  sheetScrollContent: { gap: Spacing.two, paddingBottom: Spacing.one },
   sheetTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, marginBottom: Spacing.one },
   label: { fontSize: FontSize.sm, fontWeight: FontWeight.medium },
   input: {
@@ -476,6 +518,15 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
     paddingHorizontal: Spacing.three,
     fontSize: FontSize.md,
+  },
+  passwordWrap: { justifyContent: 'center' },
+  inputWithIcon: { paddingRight: 44 },
+  eyeBtn: {
+    position: 'absolute',
+    right: Spacing.three,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   adminToggle: {
     paddingVertical: Spacing.two,

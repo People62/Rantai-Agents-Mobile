@@ -12,9 +12,7 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
+  Modal,  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -248,10 +246,10 @@ export function CredentialsScreen({ navigation }: Props) {
       />
 
       {/* Create / edit form */}
-      <Modal visible={!!form} transparent animationType="slide" onRequestClose={() => setForm(null)}>
+      <Modal visible={!!form} transparent statusBarTranslucent animationType="slide" onRequestClose={() => setForm(null)}>
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          behavior="padding">
           <Pressable style={styles.sheetBackdrop} onPress={() => setForm(null)}>
             <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <Text style={[styles.sheetTitle, { color: theme.text }]}>

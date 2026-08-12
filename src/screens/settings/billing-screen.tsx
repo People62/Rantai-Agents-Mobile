@@ -13,6 +13,7 @@ import { CreditCard, ExternalLink, Pencil, ReceiptText } from 'lucide-react-nati
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Pressable,
@@ -312,21 +313,27 @@ export function BillingScreen() {
           </View>
         </View>
 
-        {/* History */}
-        {data.invoices.length || data.creditPacks.length ? (
-          <Section theme={theme} title="Payment History">
-            {data.invoices.map((inv) => (
-              <HistoryRow key={inv.id} theme={theme} title={`Invoice ${inv.invoiceNumber ?? ''}`.trim()}
-                amount={fmtIdr(inv.amountTotal)} status={inv.status} date={fmtDate(inv.paidAt ?? inv.createdAt)}
-                receiptUrl={inv.receiptUrl ?? inv.paidPdfUrl ?? inv.pdfUrl} />
-            ))}
-            {data.creditPacks.map((p) => (
-              <HistoryRow key={p.id} theme={theme} title={`+${p.creditsGranted.toLocaleString('id-ID')} credits`}
-                amount={fmtIdr(p.amountIdr)} status={p.status} date={fmtDate(p.paidAt ?? p.createdAt)}
-                receiptUrl={p.receiptUrl} />
-            ))}
-          </Section>
-        ) : null}
+        {/* History — always shown so the empty state is visible, not a missing section. */}
+        <Section theme={theme} title="Payment History">
+          {data.invoices.length || data.creditPacks.length ? (
+            <>
+              {data.invoices.map((inv) => (
+                <HistoryRow key={inv.id} theme={theme} title={`Invoice ${inv.invoiceNumber ?? ''}`.trim()}
+                  amount={fmtIdr(inv.amountTotal)} status={inv.status} date={fmtDate(inv.paidAt ?? inv.createdAt)}
+                  receiptUrl={inv.receiptUrl ?? inv.paidPdfUrl ?? inv.pdfUrl} />
+              ))}
+              {data.creditPacks.map((p) => (
+                <HistoryRow key={p.id} theme={theme} title={`+${p.creditsGranted.toLocaleString('id-ID')} credits`}
+                  amount={fmtIdr(p.amountIdr)} status={p.status} date={fmtDate(p.paidAt ?? p.createdAt)}
+                  receiptUrl={p.receiptUrl} />
+              ))}
+            </>
+          ) : (
+            <Text style={[styles.historyEmpty, { color: theme.textSecondary }]}>
+              No payments yet. Top-ups and invoices will appear here.
+            </Text>
+          )}
+        </Section>
 
         <Button label="Manage / upgrade on web" onPress={openWeb} style={styles.webBtn} />
         <Text style={[styles.webNote, { color: theme.textSecondary }]}>
@@ -335,23 +342,25 @@ export function BillingScreen() {
       </ScrollView>
 
       {/* Edit profile */}
-      <Modal visible={editOpen} transparent animationType="slide" onRequestClose={() => setEditOpen(false)}>
-        <Pressable style={styles.sheetBackdrop} onPress={() => setEditOpen(false)}>
-          <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <ScrollView keyboardShouldPersistTaps="handled">
-              <Text style={[styles.sheetTitle, { color: theme.text }]}>Billing profile</Text>
-              <ProfileField theme={theme} label="Name" value={name} onChangeText={setName} />
-              <ProfileField theme={theme} label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-              <ProfileField theme={theme} label="NPWP" value={npwp} onChangeText={setNpwp} />
-              <ProfileField theme={theme} label="Address" value={address} onChangeText={setAddress} multiline />
-              {editError ? <Text style={[styles.errText, { color: theme.destructive }]}>{editError}</Text> : null}
-              <View style={styles.actions}>
-                <Button label="Cancel" variant="outline" onPress={() => setEditOpen(false)} style={styles.flex} />
-                <Button label="Save" onPress={saveProfile} loading={saving} style={styles.flex} />
-              </View>
-            </ScrollView>
+      <Modal visible={editOpen} transparent statusBarTranslucent animationType="slide" onRequestClose={() => setEditOpen(false)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <Pressable style={styles.sheetBackdrop} onPress={() => setEditOpen(false)}>
+            <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <ScrollView keyboardShouldPersistTaps="handled">
+                <Text style={[styles.sheetTitle, { color: theme.text }]}>Billing profile</Text>
+                <ProfileField theme={theme} label="Name" value={name} onChangeText={setName} />
+                <ProfileField theme={theme} label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+                <ProfileField theme={theme} label="NPWP" value={npwp} onChangeText={setNpwp} />
+                <ProfileField theme={theme} label="Address" value={address} onChangeText={setAddress} multiline />
+                {editError ? <Text style={[styles.errText, { color: theme.destructive }]}>{editError}</Text> : null}
+                <View style={styles.actions}>
+                  <Button label="Cancel" variant="outline" onPress={() => setEditOpen(false)} style={styles.flex} />
+                  <Button label="Save" onPress={saveProfile} loading={saving} style={styles.flex} />
+                </View>
+              </ScrollView>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Confirm cancel/resume/void */}
@@ -503,6 +512,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.two, padding: Spacing.six },
   muted: { fontSize: FontSize.base, textAlign: 'center' },
+  historyEmpty: { fontSize: FontSize.base, textAlign: 'center', paddingVertical: Spacing.three, lineHeight: 20 },
   content: { padding: Spacing.four, gap: Spacing.four, paddingBottom: Spacing.six },
 
   card: { borderRadius: Radius.lg, borderWidth: StyleSheet.hairlineWidth * 2, padding: Spacing.three },

@@ -429,11 +429,12 @@ export function AdminKnowledgeTab() {
       <Modal
         visible={confirmOpen}
         transparent
+        statusBarTranslucent
         animationType="fade"
         onRequestClose={() => setConfirmOpen(false)}>
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          behavior="padding">
           <Pressable style={styles.backdrop} onPress={() => setConfirmOpen(false)}>
             <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <Text style={[styles.dialogTitle, { color: theme.text }]}>Re-embed all documents?</Text>

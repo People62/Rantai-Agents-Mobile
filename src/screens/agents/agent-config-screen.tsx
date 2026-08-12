@@ -33,6 +33,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -212,6 +213,57 @@ export function AgentConfigScreen({ route, navigation }: Props) {
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [promptPickerOpen, setPromptPickerOpen] = useState(false);
   const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
+
+  // Keyboard-aware scrolling. Android's adjustResize reliably reveals single-line
+  // inputs but not tall multiline ones, so we measure the focused field and nudge
+  // the ScrollView until its bottom clears the keyboard. Refs are attached to each
+  // multiline field; `keepInView` runs on focus and again on keyboardDidShow (the
+  // keyboard isn't measurable yet at focus time on a cold open).
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(0);
+  const promptRef = useRef<TextInput>(null);
+  const openingRef = useRef<TextInput>(null);
+  const memoryRef = useRef<TextInput>(null);
+  const safetyRef = useRef<TextInput>(null);
+  const lastFocused = useRef<TextInput | null>(null);
+  const kbTop = useRef(0);
+  // Extra bottom inset while the keyboard is up. On Android the app window is not
+  // resized (edge-to-edge), so a short form has no room to scroll — this padding
+  // creates it. iOS lifts via KeyboardAvoidingView, so it stays 0 there.
+  const [kbInset, setKbInset] = useState(0);
+
+  const keepInView = useCallback((node: TextInput | null) => {
+    if (!node || !kbTop.current) return;
+    lastFocused.current = node;
+    requestAnimationFrame(() => {
+      node.measureInWindow((_x, y, _w, h) => {
+        const overlap = y + h + Spacing.four - kbTop.current;
+        if (overlap > 0) {
+          scrollRef.current?.scrollTo({ y: scrollY.current + overlap, animated: true });
+        }
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      kbTop.current = e.endCoordinates.screenY;
+      setKbInset(Platform.OS === 'android' ? e.endCoordinates.height : 0);
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      kbTop.current = 0;
+      setKbInset(0);
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  // Once the inset is applied (form now scrollable), reveal the focused field.
+  useEffect(() => {
+    if (kbInset > 0) keepInView(lastFocused.current);
+  }, [kbInset, keepInView]);
 
   // Unsaved-changes guard: baseline snapshot + a pending "leave" action to run
   // once the user confirms discarding.
@@ -451,8 +503,13 @@ export function AgentConfigScreen({ route, navigation }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={90}>
         <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled">
+          ref={scrollRef}
+          contentContainerStyle={[styles.content, { paddingBottom: Spacing.six + kbInset }]}
+          keyboardShouldPersistTaps="handled"
+          onScroll={(e) => {
+            scrollY.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}>
           {activeTab.editable ? null : (
             <WebOnly theme={theme} label={activeTab.label} icon={activeTab.icon}
               message={
@@ -532,8 +589,10 @@ export function AgentConfigScreen({ route, navigation }: Props) {
                   </Pressable>
                 </View>
                 <TextInput
+                  ref={promptRef}
                   value={systemPrompt}
                   onChangeText={setSystemPrompt}
+                  onFocus={() => keepInView(promptRef.current)}
                   placeholder="Describe how the agent should behave, its role, tone, and rules…"
                   placeholderTextColor={theme.textSecondary}
                   multiline
@@ -552,8 +611,10 @@ export function AgentConfigScreen({ route, navigation }: Props) {
               <View>
                 <FieldLabel theme={theme} text="Opening message" optional />
                 <TextInput
+                  ref={openingRef}
                   value={openingMessage}
                   onChangeText={setOpeningMessage}
+                  onFocus={() => keepInView(openingRef.current)}
                   placeholder="Hello! How can I help you today?"
                   placeholderTextColor={theme.textSecondary}
                   multiline
@@ -872,8 +933,10 @@ export function AgentConfigScreen({ route, navigation }: Props) {
               <View>
                 <FieldLabel theme={theme} text="Memory instructions" optional />
                 <TextInput
+                  ref={memoryRef}
                   value={mem.memoryInstructions ?? ''}
                   onChangeText={(v) => setMem((p) => ({ ...p, memoryInstructions: v }))}
+                  onFocus={() => keepInView(memoryRef.current)}
                   editable={mem.enabled}
                   placeholder="What should the agent remember?"
                   placeholderTextColor={theme.textSecondary}
@@ -900,8 +963,10 @@ export function AgentConfigScreen({ route, navigation }: Props) {
               <View>
                 <FieldLabel theme={theme} text="Safety instructions" optional />
                 <TextInput
+                  ref={safetyRef}
                   value={gr.safetyInstructions ?? ''}
                   onChangeText={(v) => setGr((p) => ({ ...p, safetyInstructions: v }))}
+                  onFocus={() => keepInView(safetyRef.current)}
                   placeholder="Extra safety rules the agent must follow…"
                   placeholderTextColor={theme.textSecondary}
                   multiline
@@ -1163,6 +1228,8 @@ function Stepper({
         <Pressable
           onPress={() => onChange(clamp(value - step))}
           hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel="Decrease"
           style={styles.stepBtn}>
           <Minus color={value <= min ? theme.textSecondary : theme.text} size={16} />
         </Pressable>
@@ -1170,6 +1237,8 @@ function Stepper({
         <Pressable
           onPress={() => onChange(clamp(value + step))}
           hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel="Increase"
           style={styles.stepBtn}>
           <Plus color={value >= max ? theme.textSecondary : theme.text} size={16} />
         </Pressable>
@@ -1244,6 +1313,8 @@ function ListEditor({
           />
           <Pressable
             onPress={add}
+            accessibilityRole="button"
+            accessibilityLabel="Add item"
             style={[styles.addBtn, { backgroundColor: theme.accent }]}>
             <Plus color={theme.accentForeground} size={18} />
           </Pressable>
@@ -1255,7 +1326,11 @@ function ListEditor({
             {items.map((it, i) => (
               <View key={`${it}-${i}`} style={[styles.tagChip, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                 <Text style={[styles.tagChipText, { color: theme.text }]}>{it}</Text>
-                <Pressable onPress={() => remove(i)} hitSlop={6}>
+                <Pressable
+                  onPress={() => remove(i)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove">
                   <X color={theme.textSecondary} size={13} />
                 </Pressable>
               </View>
@@ -1266,7 +1341,11 @@ function ListEditor({
             {items.map((it, i) => (
               <View key={`${it}-${i}`} style={[styles.listRow, { backgroundColor: theme.backgroundElement }]}>
                 <Text style={[styles.listRowText, { color: theme.text }]} numberOfLines={2}>{it}</Text>
-                <Pressable onPress={() => remove(i)} hitSlop={6}>
+                <Pressable
+                  onPress={() => remove(i)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove">
                   <X color={theme.textSecondary} size={16} />
                 </Pressable>
               </View>

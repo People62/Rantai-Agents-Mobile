@@ -25,12 +25,25 @@ import { useAuth } from '@/navigation/auth-context';
 import type { AdminStackParamList } from '@/navigation/types';
 import {
   AdminUser,
+  ApiError,
   getAdminUser,
   resetAdminUserPassword,
   updateAdminUser,
 } from '@/lib/api';
 
 type Props = NativeStackScreenProps<AdminStackParamList, 'AdminUserDetail'>;
+
+/** Extract the backend's `error` message from an ApiError body, else a fallback. */
+function apiMessage(e: unknown, fallback: string): string {
+  if (e instanceof ApiError) {
+    try {
+      return (JSON.parse(e.body) as { error?: string }).error ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
 
 export function AdminUserDetailScreen({ route }: Props) {
   const theme = useTheme();
@@ -75,7 +88,7 @@ export function AdminUserDetailScreen({ route }: Props) {
       });
       setUser(updated);
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Update failed.');
+      setActionError(apiMessage(e, 'Update failed.'));
     } finally {
       setBusy(false);
     }
@@ -90,7 +103,7 @@ export function AdminUserDetailScreen({ route }: Props) {
       setUser(updated);
       setConfirmSuspend(false);
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Update failed.');
+      setActionError(apiMessage(e, 'Update failed.'));
     } finally {
       setBusy(false);
     }
@@ -105,7 +118,7 @@ export function AdminUserDetailScreen({ route }: Props) {
       setTempPassword(res.tempPassword);
       setConfirmReset(false);
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Reset failed.');
+      setActionError(apiMessage(e, 'Reset failed.'));
     } finally {
       setBusy(false);
     }
@@ -143,6 +156,11 @@ export function AdminUserDetailScreen({ route }: Props) {
           </Text>
           <Text style={[styles.email, { color: theme.textSecondary }]}>{user.email}</Text>
           <View style={styles.tags}>
+            {isSelf ? (
+              <View style={[styles.tag, { backgroundColor: theme.accent }]}>
+                <Text style={[styles.tagText, { color: theme.accentForeground }]}>You</Text>
+              </View>
+            ) : null}
             {user.role === 'ADMIN' ? (
               <View style={[styles.tag, { backgroundColor: `${theme.accent}22` }]}>
                 <Text style={[styles.tagText, { color: theme.accent }]}>Admin</Text>
