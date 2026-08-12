@@ -12,9 +12,7 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
+  Modal,  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -272,7 +270,7 @@ export function McpServersScreen({ navigation }: Props) {
               <View
                 style={[
                   styles.statusDot,
-                  { backgroundColor: item.lastError ? theme.destructive : item.configured ? '#22C55E' : theme.textSecondary },
+                  { backgroundColor: item.lastError ? theme.destructive : item.configured ? theme.success : theme.textSecondary },
                 ]}
               />
               <Text style={[styles.statusText, { color: theme.textSecondary }]} numberOfLines={1}>
@@ -302,8 +300,8 @@ export function McpServersScreen({ navigation }: Props) {
       />
 
       {/* Create / edit form */}
-      <Modal visible={!!form} transparent animationType="slide" onRequestClose={() => setForm(null)}>
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Modal visible={!!form} transparent statusBarTranslucent animationType="slide" onRequestClose={() => setForm(null)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
           <Pressable style={styles.sheetBackdrop} onPress={() => setForm(null)}>
             <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <ScrollView keyboardShouldPersistTaps="handled">

@@ -9,7 +9,6 @@ import { Bot, Copy, Pencil, Search, Star, Trash2 } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -21,7 +20,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, EmptyState, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen, useToast } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   Agent,
@@ -40,6 +39,7 @@ type Props = NativeStackScreenProps<AgentStackParamList, 'AgentList'>;
 export function AgentListScreen({ navigation }: Props) {
   const theme = useTheme();
   const { token } = useAuth();
+  const toast = useToast();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [defaultId, setDefaultId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ export function AgentListScreen({ navigation }: Props) {
       const copy = await duplicateAgent(token, source.id);
       setAgents((prev) => [copy, ...prev]);
     } catch {
-      Alert.alert('Failed', 'Could not duplicate the agent. Try again.');
+      toast.show('Could not duplicate the agent. Try again.', 'error');
     } finally {
       setBusy(false);
     }
@@ -101,7 +101,7 @@ export function AgentListScreen({ navigation }: Props) {
       await setDefaultAgent(token, target.id);
       setDefaultId(target.id);
     } catch {
-      Alert.alert('Failed', 'Could not set the default agent. Try again.');
+      toast.show('Could not set the default agent. Try again.', 'error');
     } finally {
       setBusy(false);
     }
@@ -398,6 +398,8 @@ export function AgentListScreen({ navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {toast.node}
     </Screen>
   );
 }

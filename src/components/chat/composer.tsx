@@ -336,7 +336,11 @@ export function Composer({
                 {replyingTo.content}
               </Text>
             </View>
-            <Pressable onPress={onCancelReply} hitSlop={8}>
+            <Pressable
+              onPress={onCancelReply}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel reply">
               <X color={theme.textSecondary} size={16} />
             </Pressable>
           </View>
@@ -359,7 +363,11 @@ export function Composer({
               {uploading ? 'Uploading…' : attachment?.name}
             </Text>
             {!uploading ? (
-              <Pressable onPress={() => setAttachment(null)} hitSlop={8}>
+              <Pressable
+                onPress={() => setAttachment(null)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Remove attachment">
                 <X color={theme.textSecondary} size={16} />
               </Pressable>
             ) : null}
@@ -486,7 +494,11 @@ export function Composer({
           ) : sheetView === 'tools' ? (
             <>
               <View style={styles.sheetHeaderRow}>
-                <Pressable onPress={() => setSheetView('main')} hitSlop={8}>
+                <Pressable
+                  onPress={() => setSheetView('main')}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back">
                   <ChevronLeft color={theme.text} size={22} />
                 </Pressable>
                 <Text style={[styles.sheetHeading, { color: theme.text }]}>Tools</Text>
@@ -538,7 +550,11 @@ export function Composer({
           ) : sheetView === 'skills' ? (
             <>
               <View style={styles.sheetHeaderRow}>
-                <Pressable onPress={() => setSheetView('main')} hitSlop={8}>
+                <Pressable
+                  onPress={() => setSheetView('main')}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back">
                   <ChevronLeft color={theme.text} size={22} />
                 </Pressable>
                 <Text style={[styles.sheetHeading, { color: theme.text }]}>Skills</Text>
@@ -598,7 +614,11 @@ export function Composer({
           ) : (
             <>
               <View style={styles.sheetHeaderRow}>
-                <Pressable onPress={() => setSheetView('main')} hitSlop={8}>
+                <Pressable
+                  onPress={() => setSheetView('main')}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back">
                   <ChevronLeft color={theme.text} size={22} />
                 </Pressable>
                 <Text style={[styles.sheetHeading, { color: theme.text }]}>Canvas</Text>

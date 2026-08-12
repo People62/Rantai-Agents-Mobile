@@ -9,7 +9,6 @@ import { Check, ChevronDown, ImagePlus, Music, Sparkles, X } from 'lucide-react-
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -23,7 +22,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Screen } from '@/components/ui';
+import { Button, Screen, useToast } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   GenerateMediaInput,
@@ -92,6 +91,7 @@ const STYLE_SUFFIX: Record<string, string> = {
 export function MediaGenerateScreen({ route, navigation }: Props) {
   const theme = useTheme();
   const { token } = useAuth();
+  const toast = useToast();
 
   const [modality, setModality] = useState<MediaModality>('IMAGE');
   const [prompt, setPrompt] = useState('');
@@ -151,7 +151,7 @@ export function MediaGenerateScreen({ route, navigation }: Props) {
     } catch (e) {
       // The picker throws on user cancel; ignore that, surface real failures.
       if (e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'DOCUMENT_PICKER_CANCELED') return;
-      Alert.alert('Upload failed', 'Could not add the reference image.');
+      toast.show('Could not add the reference image.', 'error');
     }
   }, [token]);
 
@@ -478,6 +478,8 @@ export function MediaGenerateScreen({ route, navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {toast.node}
     </Screen>
   );
 }

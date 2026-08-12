@@ -9,8 +9,8 @@ import { ChevronRight, FolderPlus, Layers, Pencil, Trash2 } from 'lucide-react-n
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   RefreshControl,
@@ -20,7 +20,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, EmptyState, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen, useToast } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   KnowledgeGroup,
@@ -40,6 +40,7 @@ const PRESET_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#
 export function FilesHomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const { token } = useAuth();
+  const toast = useToast();
   const [groups, setGroups] = useState<KnowledgeGroup[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -90,7 +91,7 @@ export function FilesHomeScreen({ navigation }: Props) {
       setName('');
       setColor(PRESET_COLORS[0]);
     } catch {
-      Alert.alert('Failed', 'Could not create the knowledge base.');
+      toast.show('Could not create the knowledge base.', 'error');
     } finally {
       setBusy(false);
     }
@@ -113,7 +114,7 @@ export function FilesHomeScreen({ navigation }: Props) {
       setGroups((prev) => prev.map((g) => (g.id === renaming.id ? { ...g, name: n, color: renameColor } : g)));
       setRenaming(null);
     } catch {
-      Alert.alert('Failed', 'Could not rename the knowledge base.');
+      toast.show('Could not rename the knowledge base.', 'error');
     } finally {
       setActionBusy(false);
     }
@@ -260,34 +261,36 @@ export function FilesHomeScreen({ navigation }: Props) {
       </Modal>
 
       {/* Rename dialog */}
-      <Modal visible={!!renaming} transparent animationType="fade" onRequestClose={() => setRenaming(null)}>
-        <Pressable style={styles.backdrop} onPress={() => setRenaming(null)}>
-          <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.dialogTitle, { color: theme.text }]}>Rename knowledge base</Text>
-            <TextInput
-              value={renameName}
-              onChangeText={setRenameName}
-              autoFocus
-              placeholder="Name"
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
-            />
-            <Text style={[styles.colorLabel, { color: theme.textSecondary }]}>Color</Text>
-            <View style={styles.swatches}>
-              {PRESET_COLORS.map((c) => (
-                <Pressable
-                  key={c}
-                  onPress={() => setRenameColor(c)}
-                  style={[styles.swatch, { backgroundColor: c, borderColor: renameColor === c ? theme.text : 'transparent' }]}
-                />
-              ))}
-            </View>
-            <View style={styles.dialogActions}>
-              <Button label="Cancel" variant="outline" onPress={() => setRenaming(null)} style={styles.flex} />
-              <Button label="Save" onPress={submitRename} loading={actionBusy} disabled={!renameName.trim()} style={styles.flex} />
-            </View>
+      <Modal visible={!!renaming} transparent statusBarTranslucent animationType="fade" onRequestClose={() => setRenaming(null)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={() => setRenaming(null)}>
+            <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.dialogTitle, { color: theme.text }]}>Rename knowledge base</Text>
+              <TextInput
+                value={renameName}
+                onChangeText={setRenameName}
+                autoFocus
+                placeholder="Name"
+                placeholderTextColor={theme.textSecondary}
+                style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+              />
+              <Text style={[styles.colorLabel, { color: theme.textSecondary }]}>Color</Text>
+              <View style={styles.swatches}>
+                {PRESET_COLORS.map((c) => (
+                  <Pressable
+                    key={c}
+                    onPress={() => setRenameColor(c)}
+                    style={[styles.swatch, { backgroundColor: c, borderColor: renameColor === c ? theme.text : 'transparent' }]}
+                  />
+                ))}
+              </View>
+              <View style={styles.dialogActions}>
+                <Button label="Cancel" variant="outline" onPress={() => setRenaming(null)} style={styles.flex} />
+                <Button label="Save" onPress={submitRename} loading={actionBusy} disabled={!renameName.trim()} style={styles.flex} />
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Delete confirmation (themed) */}
@@ -312,35 +315,39 @@ export function FilesHomeScreen({ navigation }: Props) {
       </Modal>
 
       {/* Create KB dialog */}
-      <Modal visible={createOpen} transparent animationType="fade" onRequestClose={() => setCreateOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setCreateOpen(false)}>
-          <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.dialogTitle, { color: theme.text }]}>New knowledge base</Text>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder="Name"
-              placeholderTextColor={theme.textSecondary}
-              autoFocus
-              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
-            />
-            <Text style={[styles.colorLabel, { color: theme.textSecondary }]}>Color</Text>
-            <View style={styles.swatches}>
-              {PRESET_COLORS.map((c) => (
-                <Pressable
-                  key={c}
-                  onPress={() => setColor(c)}
-                  style={[styles.swatch, { backgroundColor: c, borderColor: color === c ? theme.text : 'transparent' }]}
-                />
-              ))}
-            </View>
-            <View style={styles.dialogActions}>
-              <Button label="Cancel" variant="outline" onPress={() => setCreateOpen(false)} style={styles.flex} />
-              <Button label="Create" onPress={submitCreate} loading={busy} disabled={!name.trim()} style={styles.flex} />
-            </View>
+      <Modal visible={createOpen} transparent statusBarTranslucent animationType="fade" onRequestClose={() => setCreateOpen(false)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={() => setCreateOpen(false)}>
+            <Pressable style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.dialogTitle, { color: theme.text }]}>New knowledge base</Text>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="Name"
+                placeholderTextColor={theme.textSecondary}
+                autoFocus
+                style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+              />
+              <Text style={[styles.colorLabel, { color: theme.textSecondary }]}>Color</Text>
+              <View style={styles.swatches}>
+                {PRESET_COLORS.map((c) => (
+                  <Pressable
+                    key={c}
+                    onPress={() => setColor(c)}
+                    style={[styles.swatch, { backgroundColor: c, borderColor: color === c ? theme.text : 'transparent' }]}
+                  />
+                ))}
+              </View>
+              <View style={styles.dialogActions}>
+                <Button label="Cancel" variant="outline" onPress={() => setCreateOpen(false)} style={styles.flex} />
+                <Button label="Create" onPress={submitCreate} loading={busy} disabled={!name.trim()} style={styles.flex} />
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
+
+      {toast.node}
     </Screen>
   );
 }

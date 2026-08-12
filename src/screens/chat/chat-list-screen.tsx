@@ -9,8 +9,8 @@ import { MessageCircle, MessageCirclePlus, Pencil, Search, Trash2 } from 'lucide
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   RefreshControl,
@@ -20,7 +20,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, EmptyState, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen, useToast } from '@/components/ui';
 import { Scrim, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import {
   Agent,
@@ -71,6 +71,7 @@ function relativeTime(iso: string): string {
 export function ChatListScreen({ navigation }: Props) {
   const theme = useTheme();
   const { token } = useAuth();
+  const toast = useToast();
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   /** Map assistantId → agent, to show the agent's emoji on each history row. */
   const [agentsById, setAgentsById] = useState<Record<string, Agent>>({});
@@ -105,7 +106,7 @@ export function ChatListScreen({ navigation }: Props) {
       );
       setRenaming(null);
     } catch {
-      Alert.alert('Failed', 'Could not rename. Try again.');
+      toast.show('Could not rename. Try again.', 'error');
     } finally {
       setBusy(false);
     }
@@ -326,41 +327,44 @@ export function ChatListScreen({ navigation }: Props) {
       <Modal
         visible={!!renaming}
         transparent
+        statusBarTranslucent
         animationType="fade"
         onRequestClose={() => setRenaming(null)}>
-        <Pressable style={styles.backdrop} onPress={() => setRenaming(null)}>
-          <Pressable
-            style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.dialogTitle, { color: theme.text }]}>Rename conversation</Text>
-            <TextInput
-              value={renameText}
-              onChangeText={setRenameText}
-              placeholder="Conversation title"
-              placeholderTextColor={theme.textSecondary}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={submitRename}
-              style={[
-                styles.dialogInput,
-                { color: theme.text, borderColor: theme.border, backgroundColor: theme.background },
-              ]}
-            />
-            <View style={styles.dialogActions}>
-              <Button
-                label="Cancel"
-                variant="outline"
-                onPress={() => setRenaming(null)}
-                style={styles.dialogBtn}
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={() => setRenaming(null)}>
+            <Pressable
+              style={[styles.dialog, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.dialogTitle, { color: theme.text }]}>Rename conversation</Text>
+              <TextInput
+                value={renameText}
+                onChangeText={setRenameText}
+                placeholder="Conversation title"
+                placeholderTextColor={theme.textSecondary}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={submitRename}
+                style={[
+                  styles.dialogInput,
+                  { color: theme.text, borderColor: theme.border, backgroundColor: theme.background },
+                ]}
               />
-              <Button
-                label="Save"
-                onPress={submitRename}
-                loading={busy}
-                style={styles.dialogBtn}
-              />
-            </View>
+              <View style={styles.dialogActions}>
+                <Button
+                  label="Cancel"
+                  variant="outline"
+                  onPress={() => setRenaming(null)}
+                  style={styles.dialogBtn}
+                />
+                <Button
+                  label="Save"
+                  onPress={submitRename}
+                  loading={busy}
+                  style={styles.dialogBtn}
+                />
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Delete confirmation dialog */}
@@ -408,11 +412,14 @@ export function ChatListScreen({ navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {toast.node}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.one, padding: Spacing.four },
   emptyWrap: { flexGrow: 1 },
   searchWrap: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.two },

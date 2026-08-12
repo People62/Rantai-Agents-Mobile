@@ -329,6 +329,8 @@ export function MarketplaceScreen({ navigation }: Props) {
         </View>
         <Pressable
           onPress={() => setSortOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Sort options"
           style={[styles.sortBtn, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <SlidersHorizontal color={theme.text} size={18} />
         </Pressable>
@@ -357,7 +359,12 @@ export function MarketplaceScreen({ navigation }: Props) {
             <ChevronDown color={category ? theme.accent : theme.textSecondary} size={16} />
           </Pressable>
           {category ? (
-            <Pressable onPress={() => setCategory(null)} hitSlop={8} style={styles.catClear}>
+            <Pressable
+              onPress={() => setCategory(null)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Clear category filter"
+              style={styles.catClear}>
               <X color={theme.textSecondary} size={16} />
             </Pressable>
           ) : null}
@@ -614,7 +621,11 @@ function DetailBody({
             {d?.version ? ` · v${d.version}` : ''}
           </Text>
         </View>
-        <Pressable onPress={onClose} hitSlop={8}>
+        <Pressable
+          onPress={onClose}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Close">
           <X color={theme.textSecondary} size={22} />
         </Pressable>
       </View>
