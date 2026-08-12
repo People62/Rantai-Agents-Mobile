@@ -20,6 +20,7 @@ import {
 import { Button, Input, Logo, Screen } from '@/components/ui';
 import { FontSize, FontWeight, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { ApiError } from '@/lib/api';
 import { useAuth } from '@/navigation/auth-context';
 
 export function LoginScreen() {
@@ -89,12 +90,17 @@ export function LoginScreen() {
   }, []);
 
   async function submit() {
+    if (!email.trim() || !password || loading) return;
     setError(null);
     setLoading(true);
     try {
       await signIn(email.trim(), password);
-    } catch {
-      setError('Incorrect email or password.');
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 403) {
+        setError('Your account has been suspended. Contact an administrator.');
+      } else {
+        setError('Incorrect email or password.');
+      }
     } finally {
       setLoading(false);
     }
@@ -170,7 +176,13 @@ export function LoginScreen() {
           {error ? (
             <Text style={[styles.error, { color: theme.destructive }]}>{error}</Text>
           ) : null}
-          <Button label="Log in" onPress={submit} loading={loading} style={styles.submit} />
+          <Button
+            label="Log in"
+            onPress={submit}
+            loading={loading}
+            disabled={!email.trim() || !password}
+            style={styles.submit}
+          />
         </Animated.View>
       </ScrollView>
     </Screen>
