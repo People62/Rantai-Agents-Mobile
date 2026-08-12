@@ -11,9 +11,7 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
+  Modal,  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -155,7 +153,7 @@ export function SkillsScreen({ navigation }: Props) {
   }
 
   async function toggle(s: ManagedSkill, next: boolean) {
-    if (!token) return;
+    if (!token || s.editable === false) return; // global platform skills are read-only
     setItems((prev) => prev.map((x) => (x.id === s.id ? { ...x, enabled: next } : x)));
     try {
       await updateSkill(token, s.id, { enabled: next });
@@ -205,8 +203,8 @@ export function SkillsScreen({ navigation }: Props) {
         }
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => openEdit(item)}
-            onLongPress={() => setDeleting(item)}
+            onPress={() => (item.editable === false ? undefined : openEdit(item))}
+            onLongPress={() => (item.editable === false ? undefined : setDeleting(item))}
             delayLongPress={300}
             style={[styles.row, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <View style={styles.rowTop}>
@@ -216,13 +214,23 @@ export function SkillsScreen({ navigation }: Props) {
                   <Text style={[styles.rowDesc, { color: theme.textSecondary }]} numberOfLines={2}>{item.description}</Text>
                 ) : null}
               </View>
-              <Switch value={item.enabled} onValueChange={(v) => toggle(item, v)}
-                trackColor={{ true: theme.accent, false: theme.border }} thumbColor={theme.accentForeground} />
+              <Switch
+                value={item.enabled}
+                onValueChange={(v) => toggle(item, v)}
+                disabled={item.editable === false}
+                trackColor={{ true: theme.accent, false: theme.border }}
+                thumbColor={theme.accentForeground}
+              />
             </View>
             <View style={styles.pills}>
               <View style={[styles.pill, { backgroundColor: theme.backgroundElement }]}>
                 <Text style={[styles.pillText, { color: theme.textSecondary }]}>{item.category}</Text>
               </View>
+              {item.editable === false ? (
+                <View style={[styles.pill, { backgroundColor: `${theme.accent}22` }]}>
+                  <Text style={[styles.pillText, { color: theme.accent }]}>Built-in</Text>
+                </View>
+              ) : null}
               {item.source && item.source !== 'custom' ? (
                 <View style={[styles.pill, { backgroundColor: theme.backgroundElement }]}>
                   <Text style={[styles.pillText, { color: theme.textSecondary }]}>{item.source}</Text>
@@ -234,8 +242,8 @@ export function SkillsScreen({ navigation }: Props) {
       />
 
       {/* Form */}
-      <Modal visible={!!form} transparent animationType="slide" onRequestClose={() => setForm(null)}>
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Modal visible={!!form} transparent statusBarTranslucent animationType="slide" onRequestClose={() => setForm(null)}>
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
           <Pressable style={styles.sheetBackdrop} onPress={() => setForm(null)}>
             <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <ScrollView keyboardShouldPersistTaps="handled">
