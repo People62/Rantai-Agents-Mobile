@@ -35,6 +35,9 @@ local.properties
 !debug.keystore
 .kotlin/
 
+# Release signing secrets (never commit) — the .example template IS committed
+android/keystore.properties
+
 # node.js
 #
 node_modules/
