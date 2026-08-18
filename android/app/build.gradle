@@ -88,6 +88,15 @@ android {
         versionCode 1
         versionName "1.0"
     }
+    // Release signing credentials are loaded from android/keystore.properties
+    // (gitignored — never committed). If that file is absent (CI, or a machine
+    // without the release key), the release build falls back to debug signing so
+    // it still assembles — but such a build is NOT distributable to the Play Store.
+    def keystorePropsFile = rootProject.file("keystore.properties")
+    def keystoreProps = new Properties()
+    if (keystorePropsFile.exists()) {
+        keystoreProps.load(new FileInputStream(keystorePropsFile))
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -95,15 +104,23 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile file(keystoreProps['RELEASE_STORE_FILE'])
+                storePassword keystoreProps['RELEASE_STORE_PASSWORD']
+                keyAlias keystoreProps['RELEASE_KEY_ALIAS']
+                keyPassword keystoreProps['RELEASE_KEY_PASSWORD']
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Real release key when keystore.properties exists; otherwise debug
+            // signing so local/CI builds still succeed (not for distribution).
+            signingConfig keystorePropsFile.exists() ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
