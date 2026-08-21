@@ -1,21 +1,18 @@
 /**
- * Login — sign-in UI. On mount the logo starts at the exact screen centre
- * (matching the splash) and rises into its header position, then the title and
- * form fade in — a continuous splash → login transition.
+ * Sign Up — create a new account. Registers against the backend
+ * (/api/auth/register) then logs in to obtain the mobile JWT, so a successful
+ * submit lands the user straight in the app. Navigated to from Login.
  */
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Eye, EyeOff } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Animated,
-  Easing,
   Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -27,9 +24,11 @@ import { ApiError } from '@/lib/api';
 import { useAuth } from '@/navigation/auth-context';
 import type { RootStackParamList } from '@/navigation/types';
 
-export function LoginScreen() {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function SignUpScreen() {
   const theme = useTheme();
-  const { signIn } = useAuth();
+  const { signUp } = useAuth();
   const {
     promptGoogle,
     loading: googleLoading,
@@ -37,57 +36,15 @@ export function LoginScreen() {
   } = useGoogleSignIn();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { height: winHeight } = useWindowDimensions();
 
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [kbHeight, setKbHeight] = useState(0);
-
-  // --- Intro animation (logo rises from centre, then content fades in) ---
-  const logoRef = useRef<View>(null);
-  const started = useRef(false);
-  const logoTranslate = useRef(new Animated.Value(0)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const contentFade = useRef(new Animated.Value(0)).current;
-
-  const runIntro = () => {
-    if (started.current) return;
-    logoRef.current?.measureInWindow((_x, y, _w, h) => {
-      if (!h) return;
-      started.current = true;
-      const restCentre = y + h / 2;
-      const offset = winHeight / 2 - restCentre; // start with the logo at screen centre
-      logoTranslate.setValue(offset);
-      logoOpacity.setValue(1);
-      Animated.sequence([
-        Animated.timing(logoTranslate, {
-          toValue: 0,
-          duration: 400,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(contentFade, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    });
-  };
-
-  // Safety net: if measurement never lands, just reveal everything.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (!started.current) {
-        logoOpacity.setValue(1);
-        contentFade.setValue(1);
-      }
-    }, 600);
-    return () => clearTimeout(t);
-  }, [logoOpacity, contentFade]);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) =>
@@ -100,54 +57,77 @@ export function LoginScreen() {
     };
   }, []);
 
+  const emailOk = EMAIL_RE.test(email.trim());
+  const canSubmit =
+    name.trim().length > 0 &&
+    emailOk &&
+    password.length >= 8 &&
+    confirm === password;
+
   async function submit() {
-    if (!email.trim() || !password || loading) return;
+    if (loading) return;
+    if (!name.trim()) return setError('Please enter your name.');
+    if (!emailOk) return setError('Please enter a valid email.');
+    if (password.length < 8)
+      return setError('Password must be at least 8 characters.');
+    if (confirm !== password) return setError('Passwords do not match.');
+
     setError(null);
     setLoading(true);
     try {
-      await signIn(email.trim(), password);
+      // On success, auth state flips to signed-in and RootNavigator swaps to
+      // the app — no manual navigation needed here.
+      await signUp(name.trim(), email.trim(), password);
     } catch (e) {
-      if (e instanceof ApiError && e.status === 403) {
-        setError('Your account has been suspended. Contact an administrator.');
+      if (e instanceof ApiError && e.status === 429) {
+        setError('Too many attempts. Please try again shortly.');
+      } else if (e instanceof ApiError && e.status === 400) {
+        setError('Please check your details and try again.');
       } else {
-        setError('Incorrect email or password.');
+        // register returns 201 even if the email is taken (existence is hidden),
+        // so a failed follow-up login most likely means the email is registered.
+        setError(
+          'Could not create the account. The email may already be registered — try logging in.',
+        );
       }
     } finally {
       setLoading(false);
     }
   }
 
-  const contentRise = contentFade.interpolate({ inputRange: [0, 1], outputRange: [10, 0] });
-
   return (
     <Screen>
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={[styles.scroll, { paddingBottom: Spacing.four + kbHeight }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: Spacing.four + kbHeight },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View ref={logoRef} onLayout={runIntro}>
-            <Animated.View
-              style={{ opacity: logoOpacity, transform: [{ translateY: logoTranslate }] }}>
-              <Logo width={110} />
-            </Animated.View>
-          </View>
-          <Animated.View
-            style={[
-              styles.titleWrap,
-              { opacity: contentFade, transform: [{ translateY: contentRise }] },
-            ]}>
-            <Text style={[styles.title, { color: theme.text }]}>Welcome back</Text>
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              Please log in to continue.
+          <Logo width={92} />
+          <View style={styles.titleWrap}>
+            <Text style={[styles.title, { color: theme.text }]}>
+              Create your account
             </Text>
-          </Animated.View>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+              Sign up to get started.
+            </Text>
+          </View>
         </View>
 
-        <Animated.View
-          style={[styles.form, { opacity: contentFade, transform: [{ translateY: contentRise }] }]}>
+        <View style={styles.form}>
+          <Input
+            label="Name"
+            value={name}
+            onChangeText={setName}
+            placeholder="Your name"
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="next"
+          />
           <Input
             label="Email"
             value={email}
@@ -166,16 +146,17 @@ export function LoginScreen() {
             label="Password"
             value={password}
             onChangeText={setPassword}
-            placeholder="••••••••"
+            placeholder="At least 8 characters"
             secureTextEntry={!showPassword}
             autoCapitalize="none"
-            returnKeyType="go"
-            onSubmitEditing={submit}
+            returnKeyType="next"
             rightElement={
               <Pressable
                 onPress={() => setShowPassword((v) => !v)}
                 hitSlop={8}
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
+                accessibilityLabel={
+                  showPassword ? 'Hide password' : 'Show password'
+                }>
                 {showPassword ? (
                   <EyeOff color={theme.textSecondary} size={20} />
                 ) : (
@@ -184,16 +165,26 @@ export function LoginScreen() {
               </Pressable>
             }
           />
+          <Input
+            label="Confirm password"
+            value={confirm}
+            onChangeText={setConfirm}
+            placeholder="Re-enter your password"
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            returnKeyType="go"
+            onSubmitEditing={submit}
+          />
           {error || googleError ? (
             <Text style={[styles.error, { color: theme.destructive }]}>
               {error || googleError}
             </Text>
           ) : null}
           <Button
-            label="Log in"
+            label="Sign up"
             onPress={submit}
             loading={loading}
-            disabled={!email.trim() || !password}
+            disabled={!canSubmit}
             style={styles.submit}
           />
 
@@ -214,19 +205,19 @@ export function LoginScreen() {
 
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-              Don't have an account?{' '}
+              Already have an account?{' '}
             </Text>
             <Pressable
-              onPress={() => navigation.navigate('SignUp')}
+              onPress={() => navigation.navigate('Login')}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="Sign up">
+              accessibilityLabel="Log in">
               <Text style={[styles.footerLink, { color: theme.primary }]}>
-                Sign up
+                Log in
               </Text>
             </Pressable>
           </View>
-        </Animated.View>
+        </View>
       </ScrollView>
     </Screen>
   );
@@ -234,7 +225,12 @@ export function LoginScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', gap: Spacing.five, paddingVertical: Spacing.four },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    gap: Spacing.five,
+    paddingVertical: Spacing.four,
+  },
   header: { alignItems: 'center', gap: Spacing.three },
   titleWrap: { alignItems: 'center', gap: Spacing.three },
   title: { fontSize: FontSize.title2, fontWeight: FontWeight.bold },
