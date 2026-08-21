@@ -78,6 +78,41 @@ export async function mobileLogin(
   return res.json()
 }
 
+/**
+ * Register a new account — POST /api/auth/register (the web signup endpoint;
+ * public, creates the user + a default personal organization). Succeeds with
+ * 201 and returns nothing usable for mobile — call {@link mobileLogin} right
+ * after to obtain the JWT. Throws ApiError on validation (400) or rate-limit
+ * (429). Note: the backend deliberately returns 201 even when the email is
+ * already taken (it silently skips creation), so the follow-up login is what
+ * actually confirms the credentials.
+ */
+export async function mobileRegister(
+  name: string,
+  email: string,
+  password: string,
+): Promise<void> {
+  await apiFetch("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ name, email, password }),
+  })
+}
+
+/**
+ * Google sign-in — POST /api/mobile/auth/google. Exchanges a Google ID token
+ * (from the native Google Sign-In SDK) for a mobile JWT + user. First-time
+ * users are created server-side with a default org.
+ */
+export async function mobileGoogleLogin(
+  idToken: string,
+): Promise<{ token: string; user: MobileUser }> {
+  const res = await apiFetch("/api/mobile/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ idToken }),
+  })
+  return res.json()
+}
+
 /** Authorized fetch using the Bearer token from login. */
 async function authFetch(
   path: string,

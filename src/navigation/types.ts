@@ -84,5 +84,6 @@ export type DrawerParamList = {
 
 export type RootStackParamList = {
   Login: undefined;
+  SignUp: undefined;
   Main: NavigatorScreenParams<DrawerParamList>;
 };

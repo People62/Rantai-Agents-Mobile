@@ -14,7 +14,7 @@ import {
   useState,
 } from 'react';
 
-import { mobileLogin, MobileUser } from '@/lib/api';
+import { mobileGoogleLogin, mobileLogin, mobileRegister, MobileUser } from '@/lib/api';
 
 const TOKEN_KEY = 'auth.token';
 const USER_KEY = 'auth.user';
@@ -27,6 +27,10 @@ type AuthValue = {
   user: MobileUser | null;
   /** Log in to the backend; throws an error on failure (handled by the UI). */
   signIn: (email: string, password: string) => Promise<void>;
+  /** Register then log in; throws an error on failure (handled by the UI). */
+  signUp: (name: string, email: string, password: string) => Promise<void>;
+  /** Exchange a Google ID token for a session; throws on failure (UI-handled). */
+  signInWithGoogle: (idToken: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -65,6 +69,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       async signIn(email, password) {
         const { token: newToken, user: newUser } = await mobileLogin(email, password);
+        await AsyncStorage.setItem(TOKEN_KEY, newToken);
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(newUser));
+        setToken(newToken);
+        setUser(newUser);
+      },
+      async signUp(name, email, password) {
+        // /api/auth/register creates the account (201) but returns no JWT, so
+        // log in right after to obtain the mobile token.
+        await mobileRegister(name, email, password);
+        const { token: newToken, user: newUser } = await mobileLogin(email, password);
+        await AsyncStorage.setItem(TOKEN_KEY, newToken);
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(newUser));
+        setToken(newToken);
+        setUser(newUser);
+      },
+      async signInWithGoogle(idToken) {
+        const { token: newToken, user: newUser } = await mobileGoogleLogin(idToken);
         await AsyncStorage.setItem(TOKEN_KEY, newToken);
         await AsyncStorage.setItem(USER_KEY, JSON.stringify(newUser));
         setToken(newToken);

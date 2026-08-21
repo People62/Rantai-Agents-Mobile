@@ -5,6 +5,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { LoginScreen } from '@/screens/auth/login-screen';
+import { SignUpScreen } from '@/screens/auth/sign-up-screen';
 import { SplashScreen } from '@/screens/auth/splash-screen';
 import { useAuth } from './auth-context';
 import { AppDrawer } from './drawer';
@@ -25,7 +26,10 @@ export function RootNavigator() {
       {signedIn ? (
         <Stack.Screen name="Main" component={AppDrawer} />
       ) : (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="SignUp" component={SignUpScreen} />
+        </>
       )}
     </Stack.Navigator>
   );
